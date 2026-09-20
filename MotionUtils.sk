@@ -54,12 +54,12 @@
 #
 
 function easingMotion(entity: entity, from: location, to: location, XmotionType: text, YmotionType: text, ZmotionType: text, WmotionType: text, PmotionType: text, duration: integer):
-	set {_x1} to x location of {_from}
-	set {_x2} to x location of {_to}
-	set {_y1} to y location of {_from}
-	set {_y2} to y location of {_to}
-	set {_z1} to z location of {_from}
-	set {_z2} to z location of {_to}
+	set {_x1} to x of {_from}
+	set {_x2} to x of {_to}
+	set {_y1} to y of {_from}
+	set {_y2} to y of {_to}
+	set {_z1} to z of {_from}
+	set {_z2} to z of {_to}
 	set {_yaw1} to yaw of {_from}
 	set {_yaw2} to yaw of {_to}
 	set {_pitch1} to pitch of {_from}

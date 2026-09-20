@@ -1,3 +1,6 @@
+import:
+	org.bukkit.Color
+
 on load:
 	set {editor::bpm} to 120 if {editor::bpm} is not set
 	set {editor::tick} to 0 if {editor::tick} is not set
@@ -19,98 +22,102 @@ on swap hand items:
 			play sound "ui.button.click" with pitch 2 to player
 			send title "" with subtitle "&7发光: &c关" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds
 
+function editor(p: player, name: text, diff: text):
+	clear metadata value "commandhelper" of {_p}
+	{_name} is set
+	{_diff} is set
+	{_p}'s gamemode is not spectator
+	if {editMode} is not set:
+		clear {editorSave::*}
+		clear {editor::*}
+		set {editMode} to true
+		set {editor::noteType} to "tap"
+		set {editor::face} to "w"
+		set {editor::glowing} to false
+		set {editor::tick} to 0
+		set {editor::preTime} to 0
+		set {editor::length} to 4
+		set {editor::name} to {_name}
+		set {editor::diff} to {_diff}
+		delete text displays where [metadata value "combo" of input is set]
+		delete text displays where [metadata value "score" of input is set]
+		delete text displays where [metadata value "level" of input is set]
+		delete text displays where [metadata value "soundinfo" of input is set]
+		delete text displays where [metadata value "border" of input is "a", "s" or "d"]
+		clear {_p}'s inventory
+		set slot 0 of {_p} to a light blue wool named "&b"
+		set slot 4 of {_p} to a stick named "&d&l魔杖&e (右键放置，左键删除，Shift对齐网格)"
+		set slot 8 of {_p} to a white stained glass named "&b"
+		set hotbar slot of {_p} to 4
+		playChart({_name}, {_diff}, {_p})
+		set {editor::bpm} to {bpm}
+		set {editor::offset} to {offset}
+		set {editor::author} to {author}
+		message "" to {_p}
+		message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一" to {_p}
+		message "" to {_p}
+		message "&6按键操作:" to {_p}
+		message "    &3[W]       &7步进一格（按住快进）" to {_p}
+		message "    &3[S]       &7后退一格（按住快进）" to {_p}
+		message "    &e[SPACE] &7播放" to {_p}
+		message "    &7[1]     &l  &7更改音符类型（默认为&bTap&f）" to {_p}
+		message "    &7[9]       &7更改判定面（默认为前）" to {_p}
+		message "    &7[F]       &7设置音符发光（默认为关）" to {_p}
+		message "" to {_p}
+		message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一" to {_p}
+		message "" to {_p}
+		message "&c/save &7导出谱面" to {_p}
+		message "&c/editor &7退出编辑模式" to {_p}
+		message "" to {_p}
+		wait 1 tick
+		createEditorHolo()
+		addTick({_p}, -1)
+
 command /editor [<text>] [<text>]:
 	trigger:
 		set {_arg2} to arg-2 parsed as number if arg-2 parsed as number is set
 		player's gamemode is not spectator
 		if arg-1 is not set:
-			if {editMode} is not set:
-				delete {editorSave::*}
-				set {editMode} to true
-				set {editor::noteType} to "tap"
-				set {editor::face} to "w"
-				set {editor::glowing} to false
-				message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
-				message ""
-				message "&6/editor &e[&7...&e] &7:"
-				message "    &7help   &7查看命令帮助"
-				message "    &7bpm &b<&7number&b>   &7每分钟拍数"
-				message "    &7execution &b<&7section&b>   &7放置Execution音符,&f不加{}"
-				message "    &7tag &b<&7text&b>   &7修改准星指向的音符的标签" 
-				message "    &7pretime &b<&7number&b>   &7将第1拍的时间增加x秒"
-				message ""
-				message "&6/step &b<&7integer&b>   &7/step 4 表示步长为1/4拍"
-				message "&6/b &b<&7number&b>   &7传送到某一拍"
-				message "&a/gen   &7清空已放置的音符并生成谱面代码"
-				message "&c/editor   &7退出编辑模式"
-				message ""
-				message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
-				message ""
-				message "&6按键操作:"
-				message "    &3[鼠标滚轮↑]   &7步进一格"
-				message "    &3[鼠标滚轮↓]   &7后退一格"
-				message "    &7[1]   &7更改音符类型(默认为&bTap&f)"
-				message "    &7[9]   &7更改判定面(默认为前)"
-				message "    &7[F]   &7设置音符发光(默认为关)"
-				message ""
-				message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
-				message ""
-				message "&a进入编辑模式"
-				message "&7编辑模式里，输入&f /play &7播放谱面可使之加载到编辑器上，以便修改"
-				message ""
-				
-				
-				clear player's inventory
-				set slot 0 of player to a light blue wool named "&b"
-				set slot 4 of player to a stick named "&d&l魔杖&e (右键放置，左键删除，Shift对齐网格)"
-				set slot 8 of player to a white stained glass named "&b"
-				set hotbar slot of player to 4
-				set blocks within location(3, 3, 4, world "world", 0, 0) and location(-3, -3, 4, world "world", 0, 0) to glass
-			else:
-				delete {editMode}
-				message "&c离开编辑模式"
-				clear player's inventory
-				delete {editorSave::*}
-				delete {editor::noteType}
-				set blocks within location(3, 3, 4, world "world", 0, 0) and location(-3, -3, 4, world "world", 0, 0) to air
-				loop all block displays:
-					delete loop-entity
+			{editMode} is set
+			clear {editMode}
+			clear metadata value "commandhelper" of player
+			message "&c离开编辑模式"
+			clear player's inventory
+			clear {editorSave::*}
+			clear {editor::noteType}
+			set blocks within location(3, 3, 4, world "world", 0, 0) and location(-3, -3, 4, world "world", 0, 0) to air
+			loop all block displays:
+				delete loop-entity
+			delete text displays where [metadata value "editor" of input is set]
+			mainGUI()
 		
 		else if arg-1 is "bpm":
 			{_arg2} is set
 			set {editor::bpm} to {_arg2}
-			send title "&a✔" with subtitle "&a &a" to player for 0.5 seconds with fade in 0.5 seconds and fade out 0.5 seconds
+		else if arg-1 is "author":
+			set {editor::author} to arg-2
+		else if arg-1 is "offset":
+			{_arg2} is set
+			set {editor::offset} to {_arg2}
 		else if arg-1 is "pretime":
 			{_arg2} is set
 			set {editor::preTime} to {_arg2}
-			send title "&a✔" with subtitle "&a &a" to player for 0.5 seconds with fade in 0.5 seconds and fade out 0.5 seconds
 		else if arg-1 is "help":
-			message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
-			message ""
-			message "&6/editor &e[&7...&e] &7:"
-			message "    &7help   &7查看命令帮助"
-			message "    &7bpm &b<&7number&b>   &7每分钟拍数"
-			message "    &7execution &b<&7section&b>   &7放置Execution音符,&f不加{}"
-			message "    &7tag &b<&7text&b>   &7修改准星指向的音符的标签" 
-			message "    &7pretime &b<&7number&b>   &7将第1拍的时间增加x秒"
-			message ""
-			message "&6/step &b<&7integer&b>   &7/step 4 表示步长为1/4拍"
-			message "&6/b &b<&7number&b>   &7传送到某一拍"
-			message "&a/gen   &7清空已放置的音符并生成谱面代码"
-			message "&c/editor   &7退出编辑模式"
 			message ""
 			message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
 			message ""
 			message "&6按键操作:"
-			message "    &3[鼠标滚轮↑]   &7步进一格"
-			message "    &3[鼠标滚轮↓]   &7后退一格"
-			message "    &7[1]   &7更改音符类型(默认为&bTap&f)"
-			message "    &7[9]   &7更改判定面(默认为前)"
-			message "    &7[F]   &7设置音符发光(默认为关)"
+			message "    &3[W]       &7步进一格（按住快进）"
+			message "    &3[S]       &7后退一格（按住快进）"
+			message "    &e[SPACE] &7播放"
+			message "    &7[1]     &l  &7更改音符类型（默认为&bTap&f）"
+			message "    &7[9]       &7更改判定面（默认为前）"
+			message "    &7[F]       &7设置音符发光（默认为关）"
 			message ""
 			message "&8&m一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一一"
 			message ""
-			message "&7编辑模式里，输入&f /play &7播放谱面可使之加载到编辑器上，以便修改"
+			message "&c/save &7导出谱面"
+			message "&c/editor &7退出编辑模式"
 			message ""
 		else if arg-1 is "regive":
 			{editMode} is true
@@ -118,122 +125,196 @@ command /editor [<text>] [<text>]:
 			set slot 0 of player to a light blue wool named "&b"
 			set slot 4 of player to a stick named "&d&l魔杖&e (右键放置，左键删除，Shift对齐网格)"
 			set slot 8 of player to a white stained glass named "&b"
-		else if arg-1 is "execution":
-			{editMode} is true
-			arg-2 is set
-			send title "" with subtitle "{%arg-2%}" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds
-			set {_id} to random uuid
-			set {_loc} to location(0.5, 0.5, 4, world "world", 0, 0)
-			set {_arg22} to arg-2
-			summon block display at {_loc}:
-				set display block data of entity to black stained glass
-				set display scale of entity to vector(1,1,1)
-				set glowing of entity to true
-				set display translation of entity to vector(-0.5,-0.5,0.1)
-				set display glow color override of entity to bukkitColor(255,0,255,0)
-				set display name of entity to "Section: {%{_arg22}%}"
-				set metadata value "id" of entity to {_id}
-				set {editorSave::type::%{_id}%} to "execution"
-				set {editorSave::time::%{_id}%} to {editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}
-				set {editorSave::loc::%{_id}%} to {_loc}
-				set {editorSave::section::%{_id}%} to {_arg22}
-		else if arg-1 is "tag":
-			{editMode} is true
-			loop all block displays:
-				metadata value "isPreview" of loop-entity is true
-				set {_cursor} to loop-entity
-			{_cursor} is set
-			if distance between (nearest block display relative to {_cursor}) and {_cursor} <= 1:
-				set {_id} to metadata value "id" of nearest block display relative to {_cursor}
-				send title "" with subtitle "新增Tag: &a%arg-2%" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds if arg-2 is set
-				send title "" with subtitle "删除Tag: &c%{editorSave::tag::%{_id}%}%" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds if arg-2 is not set
-				set {editorSave::tag::%{_id}%} to arg-2 if arg-2 is set
-				set {editorSave::tag::%{_id}%} to "" if arg-2 is not set
-				if {editorSave::glowing::%{_id}%} is true:
-					set display name of nearest block display relative to {_cursor} to "&aTag: %{editorSave::tag::%{_id}%}%" if {editorSave::tag::%{_id}%} is not ""
-					set display name of nearest block display relative to {_cursor} to "&a+++" if {editorSave::tag::%{_id}%} is ""
-				else:
-					set display name of nearest block display relative to {_cursor} to "&fTag: %{editorSave::tag::%{_id}%}%" if {editorSave::tag::%{_id}%} is not ""
-					reset display name of nearest block display relative to {_cursor} if {editorSave::tag::%{_id}%} is ""
-				
-
-command /b <number>:
-	trigger:
-		player's gamemode is not spectator
-		if {editMode} is set:
-			argument is set
-			set {editor::tick} to ((argument) - 1) * {editor::length}
-			send title "&a✔" with subtitle "&a &a" to player for 0.5 seconds with fade in 0.5 seconds and fade out 0.5 seconds
-
-command /step <integer>:
-	trigger:
-		player's gamemode is not spectator
-		if {editMode} is set:
-			argument is set
-			set {_past} to {editor::length}
-			set {editor::length} to argument
-			set {editor::tick} to {editor::tick} * {editor::length} / {_past}
-			send title "&a✔" with subtitle "&a &a" to player for 0.5 seconds with fade in 0.5 seconds and fade out 0.5 seconds
 
 every 2 ticks:
 	if {editMode} is set:
-		send action bar "&6BPM: &f%{editor::bpm}%   &b第 &f%floor({editor::tick}/{editor::length}) + 1%&7小节 &f%mod({editor::tick}, {editor::length})%&7/%{editor::length}%拍 &f(%{editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}%s)   &f共计 %size of {editorSave::type::*}% Notes" to all players
+		send action bar "&6BPM: &f%{editor::bpm}%   &7#&f%floor({editor::tick}/{editor::length}) + 1%  &f%mod({editor::tick}, {editor::length})+1%&7/%{editor::length}% &f(%{editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}%s)   &f共计 %size of {editorSave::type::*}% Notes" to all players
+
+function editplay():
+	{editMode} is true
+	{-loaded} is set
+	if {-editplay} is not set:
+		set {-editplay} to true
+		if {-loaded}.getMicrosecondPosition() >= {-loaded}.getMicrosecondLength():
+			setTick(random element out of all players, 0)
+		set {_time} to min({-loaded}.getMicrosecondLength(), max(0, ({editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}+{editor::offset}/1000)*1000000))
+		{-loaded}.setMicrosecondPosition(round({_time}))
+		{-loaded}.start()
+		send title "&a▶" with subtitle "&a &a" to all players for 0 ticks with fade in 0 ticks and fade out 15 ticks
+	else:
+		music("pause")
+		clear {-editplay}
+		send title "&c⏸" with subtitle "&a &a" to all players for 0 ticks with fade in 0 ticks and fade out 15 ticks
+
+every ticks:
+	{editMode} is true
+	{-editplay} is true
+	{-loaded} is set
+	set {_tick} to round(({-loaded}.getMicrosecondPosition()-{editor::preTime}*1000000-{editor::offset}*1000)/60000000*{editor::bpm}*{editor::length})
+	if {editor::tick} is not {_tick}:
+		setTick(random element out of all players, {_tick})
 
 function addTick(p: player, t: number):
 	add {_t} to {editor::tick}
+	set {editor::tick} to min(32767,max(0,{editor::tick}))
 	set {_current} to {editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}
 	loop all block displays:
 		metadata value "id" of loop-entity is set
 		delete loop-entity
+	loop integers from -63 to 63:
+		set {_bartemp::%loop-number%} to "&0."
 	loop {editorSave::time::*}:
 		set {_id} to loop-index
 		set {_time} to loop-value
 		set {_z} to ({_time} - {_current}) * 20 * {speed::%uuid of {_p}%}
+		set {_bartick} to round(({_time} - {_current}) * {editor::bpm} / 60 * 32)
+		if all:
+			{_bartemp::%{_bartick}%} is "&0."
+			{_bartick} is between -63 and 63
+		then:
+			set {_bartemp::%{_bartick}%} to "&b|" if {editorSave::type::%{_id}%} is "tap"
+			set {_bartemp::%{_bartick}%} to "&6|" if {editorSave::type::%{_id}%} is "double"
+			set {_bartemp::%{_bartick}%} to "&e|" if {editorSave::type::%{_id}%} is "drag"
+			set {_bartemp::%{_bartick}%} to "&d|" if {editorSave::type::%{_id}%} is "flickL"
+			set {_bartemp::%{_bartick}%} to "&c|" if {editorSave::type::%{_id}%} is "flickR"
 		{_z} >= -1
 		{_z} <= 50
 		set {_loc} to {editorSave::loc::%loop-index%}
 		{_loc}.add(0, 0, {_z})
 		summon block display at {_loc}:
-			set display block data of entity to light_blue_concrete if {editorSave::type::%{_id}%} is "tap"
-			set display block data of entity to orange_concrete if {editorSave::type::%{_id}%} is "double"
-			set display block data of entity to yellow_concrete if {editorSave::type::%{_id}%} is "drag"
-			set display block data of entity to white_concrete if {editorSave::type::%{_id}%} is "hold"
-			set display block data of entity to magenta_concrete if {editorSave::type::%{_id}%} is "flickL"
-			set display block data of entity to red_concrete if {editorSave::type::%{_id}%} is "flickR"
-			set display block data of entity to black stained glass if {editorSave::type::%{_id}%} is "execution"
+			set block data of entity to light_blue_concrete if {editorSave::type::%{_id}%} is "tap"
+			set block data of entity to orange_concrete if {editorSave::type::%{_id}%} is "double"
+			set block data of entity to yellow_concrete if {editorSave::type::%{_id}%} is "drag"
+			set block data of entity to white_concrete if {editorSave::type::%{_id}%} is "hold"
+			set block data of entity to magenta_concrete if {editorSave::type::%{_id}%} is "flickL"
+			set block data of entity to red_concrete if {editorSave::type::%{_id}%} is "flickR"
+			set block data of entity to black stained glass if {editorSave::type::%{_id}%} is "execution"
 			set display scale of entity to vector(1,1,1)
 			set display scale of entity to vector(1,1,3*{speed::%uuid of {_p}%}) if {editorSave::type::%{_id}%} is "hold"
-			set glowing of entity to true
 			set display translation of entity to vector(-0.5,-0.5,0.1)
 			set display translation of entity to vector(-0.5,-0.5,0.2) if {editorSave::type::%{_id}%} is "hold"
-			set display glow color override of entity to bukkitColor(255,255,255,255) if {editorSave::face::%{_id}%} is "w"
-			set display glow color override of entity to bukkitColor(255,255,235,42) if {editorSave::face::%{_id}%} is "a"
-			set display glow color override of entity to bukkitColor(255,255,150,0) if {editorSave::face::%{_id}%} is "s"
-			set display glow color override of entity to bukkitColor(255,255,0,0) if {editorSave::face::%{_id}%} is "d"
-			set display glow color override of entity to bukkitColor(255,0,255,0) if {editorSave::type::%{_id}%} is "execution"
-			if {editorSave::type::%{_id}%} is "execution":
-				set display name of entity to "Section: {%{editorSave::section::%{_id}%}%}"
-			else if {editorSave::glowing::%{_id}%} is true:
-				set display name of entity to "&aTag: %{editorSave::tag::%{_id}%}%" if {editorSave::tag::%{_id}%} is not ""
-				set display name of entity to "&a+++" if {editorSave::tag::%{_id}%} is ""
-			else:
-				set display name of entity to "&fTag: %{editorSave::tag::%{_id}%}%" if {editorSave::tag::%{_id}%} is not ""
-				reset display name of entity if {editorSave::tag::%{_id}%} is ""
+			set {_displayname} to "&f↑" if {editorSave::face::%{_id}%} is "w"
+			set {_displayname} to "&e←" if {editorSave::face::%{_id}%} is "a"
+			set {_displayname} to "&6↓" if {editorSave::face::%{_id}%} is "s"
+			set {_displayname} to "&c→" if {editorSave::face::%{_id}%} is "d"
+			set {_displayname} to "&a+++ %{_displayname}% &a+++" if {editorSave::glowing::%{_id}%} is true
+			set display name of entity to {_displayname}
 			set metadata value "id" of entity to {_id}
+	set {_bartemp::*} to reversed {_bartemp::*}
+	set {_bar} to join {_bartemp::*} by ""
+	updateBar({_bar})
+
+function setTick(p: player, t: number):
+	set {editor::tick} to min(32767,max(0,{_t}))
+	set {_current} to {editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}
+	loop all block displays:
+		metadata value "id" of loop-entity is set
+		add loop-entity to {_entities::*}
+	loop integers from -63 to 63:
+		set {_bartemp::%loop-number%} to "&0."
+	loop {editorSave::time::*}:
+		set {_id} to loop-index
+		set {_time} to loop-value
+		set {_z} to ({_time} - {_current}) * 20 * {speed::%uuid of {_p}%}
+		set {_bartick} to round(({_time} - {_current}) * {editor::bpm} / 60 * 32)
+		if all:
+			{_bartemp::%{_bartick}%} is "&0."
+			{_bartick} is between -63 and 63
+		then:
+			set {_bartemp::%{_bartick}%} to "&b|" if {editorSave::type::%{_id}%} is "tap"
+			set {_bartemp::%{_bartick}%} to "&6|" if {editorSave::type::%{_id}%} is "double"
+			set {_bartemp::%{_bartick}%} to "&e|" if {editorSave::type::%{_id}%} is "drag"
+			set {_bartemp::%{_bartick}%} to "&d|" if {editorSave::type::%{_id}%} is "flickL"
+			set {_bartemp::%{_bartick}%} to "&c|" if {editorSave::type::%{_id}%} is "flickR"
+		{_z} >= -0.5
+		{_z} <= 50
+		set {_loc} to {editorSave::loc::%loop-index%}
+		{_loc}.add(0, 0, {_z})
+		summon block display at {_loc}:
+			set block data of entity to light_blue_concrete if {editorSave::type::%{_id}%} is "tap"
+			set block data of entity to orange_concrete if {editorSave::type::%{_id}%} is "double"
+			set block data of entity to yellow_concrete if {editorSave::type::%{_id}%} is "drag"
+			set block data of entity to white_concrete if {editorSave::type::%{_id}%} is "hold"
+			set block data of entity to magenta_concrete if {editorSave::type::%{_id}%} is "flickL"
+			set block data of entity to red_concrete if {editorSave::type::%{_id}%} is "flickR"
+			set block data of entity to black stained glass if {editorSave::type::%{_id}%} is "execution"
+			set display scale of entity to vector(1,1,1)
+			set display scale of entity to vector(1,1,3*{speed::%uuid of {_p}%}) if {editorSave::type::%{_id}%} is "hold"
+			set display translation of entity to vector(-0.5,-0.5,0.1)
+			set display translation of entity to vector(-0.5,-0.5,0.2) if {editorSave::type::%{_id}%} is "hold"
+			set {_displayname} to "&f↑" if {editorSave::face::%{_id}%} is "w"
+			set {_displayname} to "&e←" if {editorSave::face::%{_id}%} is "a"
+			set {_displayname} to "&6↓" if {editorSave::face::%{_id}%} is "s"
+			set {_displayname} to "&c→" if {editorSave::face::%{_id}%} is "d"
+			set {_displayname} to "&a+++ %{_displayname}% &a+++" if {editorSave::glowing::%{_id}%} is true
+			set display name of entity to {_displayname}
+			set metadata value "id" of entity to {_id}
+	set {_bartemp::*} to reversed {_bartemp::*}
+	set {_bar} to join {_bartemp::*} by ""
+	updateBar({_bar})
+	wait 1 tick
+	kill {_entities::*}
+	
+function updateBar(bar2: text):
+	set {_totalticks} to round(({-loaded}.getMicrosecondLength() / 1000000 - {editor::offset} / 1000) * {editor::bpm} / 60 * 32)
+	set {_bar} to ""
+	set {_tick} to round({editor::tick} * 32 / {editor::length})
+	loop integers from {_tick}-63 to {_tick}+63:
+		if loop-number < 0:
+			set {_bar} to "&0.%{_bar}%"
+		else if loop-number > {_totalticks}:
+			set {_bar} to "&0.%{_bar}%"
+		else if loop-number = {_tick}:
+			set {_bar} to "&e|%{_bar}%"
+		else if mod(loop-number, 32) = 0:
+			set {_bar} to "&b,%{_bar}%"
+		else if mod(loop-number, 16) = 0:
+			set {_bar} to "&f,%{_bar}%"
+		else if mod(loop-number, 8) = 0:
+			set {_bar} to "&7,%{_bar}%"
+		else if mod(loop-number, 4) = 0:
+			set {_bar} to "&8.%{_bar}%"
+		else:
+			set {_bar} to "&0.%{_bar}%"
+	set text of {-editorholo::progress} to "%{_bar2}%%nl%%{_bar}%"
+
+every 3 ticks:
+	{editMode} is true
+	if {-banautotick} is set:
+		clear {-banautotick}
+	else:
+		set {_p} to random element out of all players
+		if size of {-keys::*} = 1:
+			if {-keys::*} contains "W":
+				add 1 to {-wkeyvl}
+				if {-wkeyvl} < 6:
+					addTick({_p}, 1)
+					play sound "block.note_block.hat" with pitch 2 to {_p}
+				else:
+					addTick({_p}, 4)
+					play sound "block.note_block.hat" with pitch 2 to {_p}
+			else:
+				set {-wkeyvl} to 0
+
+			if {-keys::*} contains "S":
+				add 1 to {-skeyvl}
+				if {-skeyvl} < 6:
+					addTick({_p}, -1)
+					play sound "block.note_block.hat" with pitch 1.5 to {_p}
+				else:
+					addTick({_p}, -4)
+					play sound "block.note_block.hat" with pitch 1.5 to {_p}
+			else:
+				set {-skeyvl} to 0
+		else:
+			set {-wkeyvl} to 0
+			set {-skeyvl} to 0
 
 on tool change:
 	{editMode} is set
 	cancel event
 	player's gamemode is not spectator
-	if event-slot is 1 or 2 or 3:
-		addTick(player, 1)
-		send title "" with subtitle "&a>>> &7&o#%floor({editor::tick}/{editor::length}) + 1% &f%mod({editor::tick}, {editor::length})%&7/%{editor::length}% &a>>>" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds
-		play sound "block.note_block.hat" with pitch 2 to player
-	else if event-slot is 5 or 6 or 7:
-		addTick(player, -1)
-		send title "" with subtitle "&a<<< &7&o#%floor({editor::tick}/{editor::length}) + 1% &f%mod({editor::tick}, {editor::length})%&7/%{editor::length}% &a<<<" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds
-		play sound "block.note_block.hat" with pitch 1.5 to player
-	else if event-slot is 0:
+	if event-slot is 0:
 		play sound "ui.button.click" with pitch 2 to player
 		if slot 0 of player is light blue wool named "&b":
 			set {editor::noteType} to "double"
@@ -284,17 +365,17 @@ on right click:
 	player's gamemode is not spectator
 	if player's tool is stick named "&d&l魔杖&e (右键放置，左键删除，Shift对齐网格)":
 		set {_z} to 4
-		set {_pz} to z location of player
+		set {_pz} to z of player
 		set {_v} to vector in direction of player
 		set {_vx} to x of {_v}
 		set {_vy} to y of {_v}
 		set {_vz} to z of {_v}
 		set {_rate} to abs({_z} - {_pz}) / {_vz}
-		set {_vx} to {_vx} * {_rate} + x location of player
+		set {_vx} to {_vx} * {_rate} + x of player
 		if player is sneaking:
-			set {_vy} to {_vy} * {_rate} + y location of player + 1.4
+			set {_vy} to {_vy} * {_rate} + y of player + 1.4
 		else:
-			set {_vy} to {_vy} * {_rate} + y location of player + 1.6
+			set {_vy} to {_vy} * {_rate} + y of player + 1.6
 		set {_vz} to {_vz} * {_rate}
 		{_vx} <= 4
 		{_vy} <= 4
@@ -310,22 +391,22 @@ on right click:
 		set {_id} to random uuid
 		set {_length} to 3*{speed::%uuid of player%}
 		summon block display at {_loc}:
-			set display block data of entity to light_blue_concrete if {editor::noteType} is "tap"
-			set display block data of entity to orange_concrete if {editor::noteType} is "double"
-			set display block data of entity to yellow_concrete if {editor::noteType} is "drag"
-			set display block data of entity to white_concrete if {editor::noteType} is "hold"
-			set display block data of entity to magenta_concrete if {editor::noteType} is "flickL"
-			set display block data of entity to red_concrete if {editor::noteType} is "flickR"
+			set block data of entity to light_blue_concrete if {editor::noteType} is "tap"
+			set block data of entity to orange_concrete if {editor::noteType} is "double"
+			set block data of entity to yellow_concrete if {editor::noteType} is "drag"
+			set block data of entity to white_concrete if {editor::noteType} is "hold"
+			set block data of entity to magenta_concrete if {editor::noteType} is "flickL"
+			set block data of entity to red_concrete if {editor::noteType} is "flickR"
 			set display scale of entity to vector(1,1,1)
-			set glowing of entity to true
 			set display translation of entity to vector(-0.5,-0.5,0.1)
-			set display glow color override of entity to bukkitColor(255,255,255,255) if {editor::face} is "w"
-			set display glow color override of entity to bukkitColor(255,255,235,42) if {editor::face} is "a"
-			set display glow color override of entity to bukkitColor(255,255,150,0) if {editor::face} is "s"
-			set display glow color override of entity to bukkitColor(255,255,0,0) if {editor::face} is "d"
 			set display scale of entity to vector(1,1,{_length}) if {editor::noteType} is "hold"
 			set display translation of entity to vector(-0.5,-0.5,0.2) if {editor::noteType} is "hold"
-			set display name of entity to "&a+++" if {editor::glowing} is true
+			set {_displayname} to "&f↑" if {editor::face} is "w"
+			set {_displayname} to "&e←" if {editor::face} is "a"
+			set {_displayname} to "&6↓" if {editor::face} is "s"
+			set {_displayname} to "&c→" if {editor::face} is "d"
+			set {_displayname} to "&a+++ %{_displayname}% &a+++" if {editor::glowing} is true
+			set display name of entity to {_displayname}
 			set metadata value "id" of entity to {_id}
 			set {editorSave::type::%{_id}%} to {editor::noteType}
 			set {editorSave::time::%{_id}%} to {editor::tick}/{editor::length}*(60/{editor::bpm})+{editor::preTime}
@@ -347,143 +428,134 @@ on left click:
 		{_cursor} is set
 		if distance between (nearest block display relative to {_cursor}) and {_cursor} <= 1:
 			set {_id} to metadata value "id" of nearest block display relative to {_cursor}
-			delete {editorSave::type::%{_id}%}
-			delete {editorSave::time::%{_id}%}
-			delete {editorSave::loc::%{_id}%}
-			delete {editorSave::face::%{_id}%}
-			delete {editorSave::turn::%{_id}%}
-			delete {editorSave::section::%{_id}%}
-			delete {editorSave::glowing::%{_id}%}
-			delete {editorSave::tag::%{_id}%}
+			clear {editorSave::type::%{_id}%}
+			clear {editorSave::time::%{_id}%}
+			clear {editorSave::loc::%{_id}%}
+			clear {editorSave::face::%{_id}%}
+			clear {editorSave::turn::%{_id}%}
+			clear {editorSave::section::%{_id}%}
+			clear {editorSave::glowing::%{_id}%}
+			clear {editorSave::tag::%{_id}%}
 			delete nearest block display relative to {_cursor}
 
-command /gen:
-	trigger:	
+command /save:
+	trigger:
 		{editMode} is set
 		player's gamemode is not spectator
-		size of {editorSave::type::*} > 0
+		{editor::name} is set
+		{editor::diff} is set
+		send "&a导出谱面中，请勿操作" to player
+		set {_path} to "GAME/levels/%{editor::name}%/%{editor::diff}%.chart"
+		set {_pathbackup} to "GAME/levels/%{editor::name}%/%{editor::diff}%.chartbackup"
+		delete file path {_pathbackup}
+		copy file path {_path} to file path {_pathbackup} if file path {_path} is not missing
+		delete file path {_path}
+		create file path {_path}
+		append "level %{editor::level}%" to file path {_path}
+		append "author %{editor::author}%" to file path {_path}
+		append "bpm %{editor::bpm}%" to file path {_path}
+		append "offset %{editor::offset}%" to file path {_path}
+		
+		clear {-used::*}
 		set {_sorted::*} to sorted indices of {editorSave::time::*} in ascending order
 		set {_count} to 0
 		loop {_sorted::*}:
+			add 1 to {_count}
 			set {_id} to loop-value
-			set {_x} to x location of {editorSave::loc::%{_id}%}
-			set {_y} to y location of {editorSave::loc::%{_id}%}
+			{-used::%{_id}%} is not set
+			set {_x} to x of {editorSave::loc::%{_id}%}
+			set {_y} to y of {editorSave::loc::%{_id}%}
 			if {editorSave::type::%{_id}%} is "execution":
-				set {_gen} to "%{editorSave::type::%{_id}%}%(%{editorSave::time::%{_id}%}%, {%{editorSave::section::%{_id}%}%})"
-				delete {editorSave::type::%{_id}%}
-				delete {editorSave::time::%{_id}%}
-				delete {editorSave::loc::%{_id}%}
-				delete {editorSave::section::%{_id}%}
+				set {_gen} to "%round({editorSave::time::%{_id}%}*1000)% %{editorSave::type::%{_id}%}% %{editorSave::section::%{_id}%}%"
 			else if {editorSave::type::%{_id}%} is "tap" or "hold" or "drag":
-				set {_gen} to "%{editorSave::type::%{_id}%}%(%{editorSave::time::%{_id}%}%, ""%{editorSave::face::%{_id}%}%"", %{_x} - 0.5%, %{_y} - 0.5%, %{editorSave::glowing::%{_id}%}%, ""%{editorSave::tag::%{_id}%}%"")"
-				delete {editorSave::type::%{_id}%}
-				delete {editorSave::time::%{_id}%}
-				delete {editorSave::loc::%{_id}%}
-				delete {editorSave::face::%{_id}%}
-				delete {editorSave::turn::%{_id}%}
-				delete {editorSave::glowing::%{_id}%}
-				delete {editorSave::tag::%{_id}%}
+				set {_gen} to "%round({editorSave::time::%{_id}%}*1000)% %{editorSave::type::%{_id}%}% %{editorSave::face::%{_id}%}% %{_x} - 0.5% %{_y} - 0.5% %{editorSave::glowing::%{_id}%}%"
 			else if {editorSave::type::%{_id}%} is "flickR" or "flickL":
 				set {_tempType1} to "flick"
-				set {_gen} to "%{_tempType1}%(%{editorSave::time::%{_id}%}%, ""%{editorSave::face::%{_id}%}%"", ""%{editorSave::turn::%{_id}%}%"", %{editorSave::glowing::%{_id}%}%, ""%{editorSave::tag::%{_id}%}%"")"
-				delete {editorSave::type::%{_id}%}
-				delete {editorSave::time::%{_id}%}
-				delete {editorSave::loc::%{_id}%}
-				delete {editorSave::face::%{_id}%}
-				delete {editorSave::turn::%{_id}%}
-				delete {editorSave::glowing::%{_id}%}
-				delete {editorSave::tag::%{_id}%}
+				set {_gen} to "%round({editorSave::time::%{_id}%}*1000)% %{_tempType1}% %{editorSave::face::%{_id}%}% %{editorSave::turn::%{_id}%}% %{editorSave::glowing::%{_id}%}%"
 			else if {editorSave::type::%{_id}%} is "double":
 				set {_tempType} to {editorSave::type::%{_id}%}
 				set {_tempTime} to {editorSave::time::%{_id}%}
 				set {_tempFace} to {editorSave::face::%{_id}%}
 				set {_tempGlowing} to {editorSave::glowing::%{_id}%}
 				set {_tempTag} to {editorSave::tag::%{_id}%}
-				set {_x1} to x location of {editorSave::loc::%{_id}%}
-				set {_y1} to y location of {editorSave::loc::%{_id}%}
-				delete {editorSave::type::%{_id}%}
-				delete {editorSave::time::%{_id}%}
-				delete {editorSave::loc::%{_id}%}
-				delete {editorSave::face::%{_id}%}
-				delete {editorSave::turn::%{_id}%}
-				delete {editorSave::glowing::%{_id}%}
-				delete {editorSave::tag::%{_id}%}
-				delete {_x2}
-				delete {_y2}
-				loop {editorSave::type::*}:
-					loop-value-2 is "double"
-					{editorSave::time::%loop-index-2%} - {_tempTime} is between -0.05 and 0.05
-					set {_x2} to x location of {editorSave::loc::%loop-index-2%}
-					set {_y2} to y location of {editorSave::loc::%loop-index-2%}
-					delete {editorSave::type::%loop-index-2%}
-					delete {editorSave::time::%loop-index-2%}
-					delete {editorSave::loc::%loop-index-2%}
-					delete {editorSave::face::%loop-index-2%}
-					delete {editorSave::turn::%loop-index-2%}
-					delete {editorSave::glowing::%loop-index-2%}
-					delete {editorSave::tag::%loop-index-2%}
+				set {_x1} to x of {editorSave::loc::%{_id}%}
+				set {_y1} to y of {editorSave::loc::%{_id}%}
+				clear {_x2}
+				clear {_y2}
+				clear {_id2}
+				loop indices of {editorSave::type::*}:
+					loop-value-2 is not {_id}
+					set {_id2} to loop-value-2
+					{editorSave::type::%{_id2}%} is "double"
+					{editorSave::time::%{_id2}%} - {_tempTime} is between -0.05 and 0.05
+					set {_x2} to x of {editorSave::loc::%{_id2}%}
+					set {_y2} to y of {editorSave::loc::%{_id2}%}
+					set {-used::%{_id2}%} to true
 					exit loop
-				set {_gen} to "%{_tempType}%(%{_tempTime}%, ""%{_tempFace}%"", %{_x1} - 0.5%, %{_y1} - 0.5%, %{_x2} - 0.5%, %{_y2} - 0.5%, %{_tempGlowing}%, ""%{_tempTag}%"")"
+				set {_gen} to "%round({_tempTime}*1000)% %{_tempType}% %{_tempFace}% %{_x1} - 0.5% %{_y1} - 0.5% %{_x2} - 0.5% %{_y2} - 0.5% %{_tempGlowing}%"
 			else:
 				set {_gen} to "empty"
+			
 			if {_gen} contains "<none>":
 				replace all "<none>" with "&e<none>&c" in {_gen}
 				broadcast "&c✘ &c%{_gen}%"
 			else:
 				{_gen} is not "empty"
-				add 1 to {_count}
-				log "%{_gen}%" to file "generated.log"
-		loop all block displays:
-			metadata value "id" of loop-entity is set
-			delete loop-entity
-		delete {editorSave::*}
-		send title "" with subtitle "&a已清空面板" to player for 0.5 seconds with fade in 0 seconds and fade out 0.5 seconds
-		send "" to player
-		send "&a处理完毕，成功生成了 %{_count}% 个音符" to player
-		send "&7(前往 &fplugins\skript\logs\generated.log&7 查看生成结果)" to player
+				add {_gen} to {_export::*}
+			send action bar "&f%{_count}%/%size of {_sorted::*}%  正在导出: &7%{_gen}%"
+			wait 1 tick if mod({_count},100) = 0
+		
+		append {_export::*} to file path {_path}
+
+		send "&a谱面已保存" to player
+		send "&7(前往 &fGAME/levels/%{editor::name}%/%{editor::diff}%.chart&7 查看生成结果)" to player
 		send "" to player
 
 every ticks:
-	{editMode} is set
+	{editMode} is true
+	kill block displays where [metadata value "isPreview" of input is true]
+	{-editplay} is not true
 	loop all players:
 		loop-player's gamemode is not spectator
 		tool of loop-player is stick named "&d&l魔杖&e (右键放置，左键删除，Shift对齐网格)"
 		set {_z} to 4
-		set {_pz} to z location of loop-player
+		set {_pz} to z of loop-player
 		set {_v} to vector in direction of loop-player
 		set {_vx} to x of {_v}
 		set {_vy} to y of {_v}
 		set {_vz} to z of {_v}
 		set {_rate} to abs({_z} - {_pz}) / {_vz}
-		set {_vx} to {_vx} * {_rate} + x location of loop-player
+		set {_vx} to {_vx} * {_rate} + x of loop-player
 		if loop-player is sneaking:
-			set {_vy} to {_vy} * {_rate} + y location of loop-player + 1.4
+			set {_vy} to {_vy} * {_rate} + y of loop-player + 1.4
 		else:
-			set {_vy} to {_vy} * {_rate} + y location of loop-player + 1.6
+			set {_vy} to {_vy} * {_rate} + y of loop-player + 1.6
 		set {_vz} to {_vz} * {_rate}
-		loop all block displays:
-			delete loop-entity-2 if metadata value "isPreview" of loop-entity-2 is true
 		{_vx} <= 4
 		{_vy} <= 4
 		{_vx} >= -3
 		{_vy} >= -3
 		if loop-player is sneaking:
+			set blocks within location(2, 2, 4, world "world", 0, 0) and location(-2, -2, 4, world "world", 0, 0) to glass
 			set {_vx} to round({_vx}*2)/2
 			set {_vy} to round({_vy}*2)/2
+		else:
+			set blocks within location(2, 2, 4, world "world", 0, 0) and location(-2, -2, 4, world "world", 0, 0) to air
 		set {_loc} to location({_vx}, {_vy}, {_z}, world "world", 0, 0)
 		summon block display at {_loc}:
-			set display block data of entity to light_blue_concrete if {editor::noteType} is "tap"
-			set display block data of entity to orange_concrete if {editor::noteType} is "double"
-			set display block data of entity to white_concrete if {editor::noteType} is "hold"
-			set display block data of entity to yellow_concrete if {editor::noteType} is "drag"
-			set display block data of entity to magenta_concrete if {editor::noteType} is "flickL"
-			set display block data of entity to red_concrete if {editor::noteType} is "flickR"
+			set block data of entity to light_blue_concrete if {editor::noteType} is "tap"
+			set block data of entity to orange_concrete if {editor::noteType} is "double"
+			set block data of entity to white_concrete if {editor::noteType} is "hold"
+			set block data of entity to yellow_concrete if {editor::noteType} is "drag"
+			set block data of entity to magenta_concrete if {editor::noteType} is "flickL"
+			set block data of entity to red_concrete if {editor::noteType} is "flickR"
 			set display scale of entity to vector(1,1,1)
-			set glowing of entity to true
 			set display translation of entity to vector(-0.5,-0.5,0.1)
-			set display glow color override of entity to bukkitColor(255,255,255,255) if {editor::face} is "w"
-			set display glow color override of entity to bukkitColor(255,255,235,42) if {editor::face} is "a"
-			set display glow color override of entity to bukkitColor(255,255,150,0) if {editor::face} is "s"
-			set display glow color override of entity to bukkitColor(255,255,0,0) if {editor::face} is "d"
-			set display name of entity to "&a+++" if {editor::glowing} is true
+			
+			set {_displayname} to "&f↑" if {editor::face} is "w"
+			set {_displayname} to "&e←" if {editor::face} is "a"
+			set {_displayname} to "&6↓" if {editor::face} is "s"
+			set {_displayname} to "&c→" if {editor::face} is "d"
+			set {_displayname} to "&a+++ %{_displayname}% &a+++" if {editor::glowing} is true
+			set display name of entity to {_displayname}
 			set metadata value "isPreview" of entity to true

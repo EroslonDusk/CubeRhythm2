@@ -1,26 +1,7 @@
-options:
-    structurePath: plugins/Skript/schematics
+import:
+	org.bukkit.Color
 
-function pasteSchematic(id: text, loc: location):
-	paste schematic "{@structurePath}/empty.schem" at {_loc}
-	wait 2 ticks
-	paste schematic "{@structurePath}/%{_id}%.schem" at {_loc}
-#
-#	清空出生点黑箱范围内的所有方块，并在原点处粘贴结构
-#	最好将出生点设为原点，关于如何保存结构和设置原点请看下面：
-#	1. 在出生点附近建好结构
-#	2. 手持烈焰棒 左/右键地图两个定点确定选区（和小木斧一样）
-#	3. 手持烈焰棒 Shift+右键出生点脚下屏障作为原点
-#	4. 输入/sksave <结构名>将选区保存为 结构名.schem 并存储在plugins/Skript/schematics文件夹里
-#	如何导入结构：
-#	将.schem文件丢进plugins/Skript/schematics
-#
-#	pasteSchematic("结构名（不用加.schem）", 原点位置(变量))
-#
-
-
-
-function drawLine(face: text, x: number, y: number, z: number, pitch: number, length: number, duration: number, glowing: boolean, gc1: number, gc2: number, gc3: number, gc4: number):
+function drawLine(face: text, x: number, y: number, z: number, pitch: number, length: number, duration: number, glowing: boolean, color: color):
 	{_duration} >= 3
 	set {_x} to {_x}+0.5
 	set {_y} to {_y}-0.5
@@ -38,9 +19,9 @@ function drawLine(face: text, x: number, y: number, z: number, pitch: number, le
 		remove 1 from {_z}
 		set {_loc} to location(-1*{_z}+0.95, {_y}+1, {_x}, world "world", 270, 0)
 	summon block display at {_loc}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to white_concrete
+		set interpolation delay of entity to 2 ticks
+		set interpolation duration of entity to 100 ticks
+		set block data of entity to white_concrete
 		set display scale of entity to vector(0.05,{_length},0.05)
 		set metadata value "face" of entity to {_face}
 		set metadata value "decoration" of entity to true
@@ -51,10 +32,10 @@ function drawLine(face: text, x: number, y: number, z: number, pitch: number, le
 		set yaw of entity to -180 if {_face} is "d"
 		if {_glowing} is true:
 			set glowing of entity to true
-			set display glow color override of entity to bukkitColor({_gc1},{_gc2},{_gc3},{_gc4})
+			set glow color override of entity to {_color}
 		set {_entity} to entity
 	wait 2 ticks
-	set display brightness of {_entity} to displayBrightness(15,15)
+	set block light override of {_entity} to 15
 	set display translation of {_entity} to vector(-100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "w" or "s"
 	set display translation of {_entity} to vector(-100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "a" or "d"
 	loop {_duration}-2 times:
@@ -72,9 +53,7 @@ function drawLine(face: text, x: number, y: number, z: number, pitch: number, le
 #	最后四个数取值范围均为0~255
 #
 
-
-
-function drawLineWithoutMotion(face: text, x: number, y: number, z: number, pitch: number, length: number, duration: number, glowing: boolean, gc1: number, gc2: number, gc3: number, gc4: number):
+function drawLineWithoutMotion(face: text, x: number, y: number, z: number, pitch: number, length: number, duration: number, glowing: boolean, color: color):
 	{_duration} >= 1
 	set {_x} to {_x}+0.5
 	set {_y} to {_y}-0.5
@@ -91,7 +70,7 @@ function drawLineWithoutMotion(face: text, x: number, y: number, z: number, pitc
 		remove 1 from {_z}
 		set {_loc} to location(-1*{_z}+0.95, {_y}+1, {_x}, world "world", 270, 0)
 	summon block display at {_loc}:
-		set display block data of entity to white_concrete
+		set block data of entity to white_concrete
 		set display scale of entity to vector(0.05,{_length},0.05)
 		set metadata value "face" of entity to {_face}
 		set metadata value "decoration" of entity to true
@@ -102,10 +81,10 @@ function drawLineWithoutMotion(face: text, x: number, y: number, z: number, pitc
 		set yaw of entity to -180 if {_face} is "d"
 		if {_glowing} is true:
 			set glowing of entity to true
-			set display glow color override of entity to bukkitColor({_gc1},{_gc2},{_gc3},{_gc4})
+			set glow color override of entity to {_color}
 		set {_entity} to entity
 	wait 2 ticks
-	set display brightness of {_entity} to displayBrightness(15,15)
+	set block light override of {_entity} to 15
 	loop {_duration} times:
 		wait 1 tick
 	loop all block displays:
@@ -123,17 +102,17 @@ function drawLineWithoutMotion(face: text, x: number, y: number, z: number, pitc
 
 
 
-function drawBlockDisplay(blockdata: blockdata, x: number, y: number, z: number, yaw: number, pitch: number, scale: vector, duration: number, glowing: boolean, gc1: number, gc2: number, gc3: number, gc4: number):
+function drawBlockDisplay(blockdata: blockdata, x: number, y: number, z: number, yaw: number, pitch: number, scale: vector, duration: number, glowing: boolean, color: color):
 	{_duration} >= 1
 	set {_loc} to location({_x}, {_y}, {_z}, world "world", {_yaw}, {_pitch})
 	summon block display at {_loc}:
-		set display block data of entity to {_blockdata}
+		set block data of entity to {_blockdata}
 		set display scale of entity to {_scale}
 		set metadata value "decoration" of entity to true
-		set display brightness of entity to displayBrightness(15,15)
+		set block light override of entity to 15
 		if {_glowing} is true:
 			set glowing of entity to true
-			set display glow color override of entity to bukkitColor({_gc1},{_gc2},{_gc3},{_gc4})
+			set glow color override of entity to {_color}
 		set {_entity} to entity
 	loop {_duration} times:
 		wait 1 tick
@@ -153,17 +132,17 @@ function drawBlockDisplay(blockdata: blockdata, x: number, y: number, z: number,
 
 
 
-function drawItemDisplay(item: item, x: number, y: number, z: number, yaw: number, pitch: number, scale: vector, duration: number, glowing: boolean, gc1: number, gc2: number, gc3: number, gc4: number):
+function drawItemDisplay(item: item, x: number, y: number, z: number, yaw: number, pitch: number, scale: vector, duration: number, glowing: boolean, color: color):
 	{_duration} >= 1
 	set {_loc} to location({_x}, {_y}, {_z}, world "world", {_yaw}, {_pitch})
 	summon item display at {_loc}:
-		set display item of entity to {_item}
+		set item of entity to {_item}
 		set display scale of entity to {_scale}
 		set metadata value "decoration" of entity to true
-		set display brightness of entity to displayBrightness(15,15)
+		set block light override of entity to 15
 		if {_glowing} is true:
 			set glowing of entity to true
-			set display glow color override of entity to bukkitColor({_gc1},{_gc2},{_gc3},{_gc4})
+			set glow color override of entity to {_color}
 		set {_entity} to entity
 	loop {_duration} times:
 		wait 1 tick
@@ -184,7 +163,7 @@ function drawItemDisplay(item: item, x: number, y: number, z: number, yaw: numbe
 
 
 function blind(duration: timespan):
-	apply blindness without any particles to {actor} for 1 hour
+#	apply blindness without any particles to {actor} for 1 hour
 	loop all block displays:
 		metadata value "decoration" of loop-entity is true
 		set glowing of loop-entity to true
@@ -203,7 +182,7 @@ function blind(duration: timespan):
 #on load:
 #	create section stored in {blind1}:
 #		blind(1.5 seconds)
-#		delete {blind1}
+#		clear {blind1}
 
 
 
@@ -214,7 +193,7 @@ function forceExact(ticks: integer, tag: text):
 			set metadata value "forceexact" of loop-entity to true if metadata value "tag" of loop-entity is {_tag}
 		wait 1 tick
 	loop all interactions:
-		delete metadata value "forceexact" of loop-entity if metadata value "tag" of loop-entity is {_tag}
+		clear metadata value "forceexact" of loop-entity if metadata value "tag" of loop-entity is {_tag}
 #
 #	超级时间，该时间内轨道上拥有特定Tag的音符，击中不会产生Just判定
 #
@@ -225,7 +204,7 @@ function forceExact(ticks: integer, tag: text):
 #on load:
 #	create section stored in {st1}:
 #		forceExact(20, "custom")
-#		delete {st1}
+#		clear {st1}
 
 
 
@@ -244,12 +223,12 @@ function setTextDisplay(face: text, x: number, y: number, z: number, pitch: numb
 		set {_loc} to location(-1*{_z}, {_y}, {_x}, world "world", 0, {_pitch})
 	{_loc}.add(0, 1, 0)
 	summon text display at {_loc}:
-		set display text of the entity to {_text} if {showOffset::%uuid of {actor}%} is not "&a开"
+		set text of the entity to {_text} if {showOffset::%uuid of {actor}%} is not "&a开"
 		set display scale of the entity to vector({_scale},{_scale},{_scale})
-		set display right rotation of the entity to axisAngle(90 * (3.14 / 180), 0, 1, 0)
+		set right rotation of the entity to axisAngle(90, vector(0, 1, 0))
 		set display translation of the entity to vector({_scale}*-0.015,{_scale}*-0.15,0)
-		set display text opacity of the entity to {_opacity}
-		set display text background color of the entity to bukkitColor(0,0,0,0)
+		set opacity of the entity to {_opacity}
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
 		set {_entity} to entity
 	wait {_duration}
 	loop all text displays:
@@ -279,12 +258,13 @@ function setTextDisplay(face: text, x: number, y: number, z: number, pitch: numb
 
 
 
-function changeGlowingColor(tag: text, opacity: number, r: number, g: number, b: number, duration: integer):
+function changeGlowingColor(tag: text, color: color, duration: integer):
 	loop {duration} times:
 		{actor} is set
 		wait 1 tick
 		loop all block displays:
-			set display glow color override of loop-entity to bukkitColor({_opacity},{_r},{_g},{_b}) if metadata value "tag" of loop-entity is {_tag}
+			set glow color override of loop-entity to {_color} if metadata value "tag" of loop-entity is {_tag}
+
 #
 #	在一段时间内更改轨道上拥有特定Tag的音符的发光颜色
 #

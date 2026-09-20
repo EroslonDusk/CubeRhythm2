@@ -1,0 +1,88 @@
+import:
+	javax.imageio.ImageIO
+	java.awt.geom.AffineTransform
+	java.awt.image.BufferedImage
+	java.awt.RenderingHints
+	java.io.File
+
+on join:
+	send resource pack from url "http://127.0.0.1:30084/generated.zip" with uuid (uuid of player) with prompt "&f欢迎来到 &aCube&bRhythm&f ！%nl%&f请点击“继续”以安装必要的资源文件%nl%%nl%&f资源包生成时间: %now%" to player with force
+
+on skript start:
+	updatepack({_p})
+
+command /pack:
+	trigger:
+		updatepack(player)
+
+function updatepack(p: player):
+	clear {-unicode::*}
+	delete dir path "GAME/pack"
+	delete file path "GAME/generated.zip"
+	broadcast "正在检索资源"
+	copy dir path "GAME/template" to dir path "GAME/pack"
+	set {_font} to file path "GAME/pack/assets/minecraft/font/default.json"
+	append "" to {_font}
+	loop all dirs of dir path "GAME/levels":
+		set {_name} to dir name of loop-path
+		clear {_bg}
+		set {_id} to (dir name of loop-path) hashed with MD5
+		
+		#读取metadata.txt与提取文件
+		set {_tags::*} to content of file path "GAME/levels/%{_name}%/metadata.txt"
+		loop {_tags::*}:
+			loop-value-2 start with "封面="
+			set {_bg} to loop-value-2
+			replace first "封面=" with "" in {_bg}
+		{_bg} is set
+		file path "GAME/levels/%{_name}%/%{_bg}%" is not missing
+		
+		#图片处理部分
+		set {_source} to new File("GAME/levels/%{_name}%/%{_bg}%")
+		set {_output} to new File("GAME/pack/assets/minecraft/textures/bg/%{_id}%.png")
+		set {_original} to ImageIO.read({_source})
+		set {_imgsize} to min({_original}.getWidth(), {_original}.getHeight())
+		set {_scaledW} to round(128 / {_imgsize} * {_original}.getWidth())
+		set {_scaledH} to round(128 / {_imgsize} * {_original}.getHeight())
+		set {_g2d} to {_original}.createGraphics()
+		{_g2d}.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+		{_g2d}.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+		{_g2d}.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+		set {_transformed} to AffineTransform.getScaleInstance({_scaledW} / {_original}.getWidth(), {_scaledH} / {_original}.getHeight())
+		{_g2d}.drawImage({_original}, {_transformed}, null)
+		
+		set {_cutx} to ({_scaledW} - 128) / 2
+		set {_cuty} to ({_scaledH} - 128) / 2
+		set {_result} to {_original}.getSubimage({_cutx}, {_cuty}, 128, 128)
+		
+		ImageIO.write({_result}, "png", {_output})
+		
+		#编辑default.json
+		set {-unicode::%{_id}%} to "%size of {-unicode::*} + 1%"
+		set {-unicode::%{_id}%} to "0%{-unicode::%{_id}%}%" if length of {-unicode::%{_id}%} = 2
+		set {-unicode::%{_id}%} to "00%{-unicode::%{_id}%}%" if length of {-unicode::%{_id}%} = 1
+		set {-unicode::%{_id}%} to "f%{-unicode::%{_id}%}%"
+		clear {_append::*}
+		add "		}," to {_append::*}
+		add "		{" to {_append::*}
+		add "			""type"": ""bitmap""," to {_append::*}
+		add "			""file"": ""minecraft:bg/%{_id}%.png""," to {_append::*}
+		add "			""ascent"": 66," to {_append::*}
+		add "			""height"": 128," to {_append::*}
+		add "			""chars"":[" to {_append::*}
+		add "				""\u%{-unicode::%{_id}%}%""" to {_append::*}
+		add "			]" to {_append::*}
+		append {_append::*} to {_font}
+	append "		}", "	]", "}" to {_font}
+	zip file path "GAME/pack/assets", "GAME/pack/pack.mcmeta", "GAME/pack/pack.png" to file path "GAME/generated.zip"
+	broadcast "资源更新完毕"
+	
+	#发送资源包给玩家
+	if {_p} is set:
+		send resource pack from url "http://127.0.0.1:30084/generated.zip" with uuid (uuid of {_p}) with prompt "&f欢迎来到 &aCube&bRhythm&f ！%nl%&f请点击“继续”以安装必要的资源文件" to {_p} with force
+
+on resource pack request response:
+	if the resource pack was failed to download:
+		execute file path "GAME/easyhttp.bat"
+		wait 2 seconds
+		send resource pack from url "http://127.0.0.1:30084/generated.zip" with uuid (uuid of player) with prompt "&f欢迎来到 &aCube&bRhythm&f ！%nl%&f请点击“继续”以安装必要的资源文件" to player with force
