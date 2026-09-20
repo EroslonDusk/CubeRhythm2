@@ -19,7 +19,7 @@
 https://github.com/EroslonDusk/CubeRhythm/wiki
 
 ## 下载地址
-2.0的测试版本请加群下载，如果你要下载1.3及之前的版本，请点下方链接↓
+2.0的测试版本请加群下载，如果你要下载1.3及之前的版本，请查阅链接：
 https://www.123pan.com/s/eaNjVv-olZBA
 
 如果你对Cube Rhythm感兴趣，欢迎加入我们的QQ群聊：[300846184](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=SgCNDOGEwRfCo1iKtLBknSuKhanpQmLZ&authKey=G7trk03ZTQeU7%2FDH6Ph89M%2FG5vrvkrSxO%2BtdFKwlmSeJOwlb4TjihMTWVtdoyqxI&noverify=0&group_code=300846184)
