@@ -1,120 +1,49 @@
-every ticks:
-	if {process} is set:
-		add 1 to {loadingTime}
-		set {_dots} to round({process} / 2)
-		set {_bar} to "&a"
-		loop {_dots} times:
-			set {_bar} to "%{_bar}%·"
-		set {_bar} to "%{_bar}%&7"
-		loop (50 - {_dots}) times:
-			set {_bar} to "%{_bar}%·"
-		send title "" with subtitle "&8%ceiling({loadingTime}/20)% %{_bar}%&8 %ceiling({loadingTime}/20)%" to all players for 1 second with fade in 0 seconds and fade out 0 seconds
-	else if {loadingTime} is set:
-		delete {loadingTime}
-
-on load:
-	set {loaded} to true
-
-function playChart(id: text):
-	set {noteID} to 0
+function playChart(name: text, diff: text, p: player):
+	set {actor} to {_p}
 	set {process} to 0
-	delete {editorSave::*} if {editMode} is true
-	create section stored in {_sync}:
-		loop enabled scripts:
-			loop-value start with "charts"
-			if loop-value contains "_properties":
-				set {_null} to ""
-			else:
-				disable script loop-value
-		quitGame() if {editMode} is not true
-	run section {_sync} sync and wait
-	wait 1 tick
+	clear {-readcomplete}
+	clear {editorSave::*}
 	set {process} to 10
-	create section stored in {_async}:
-		enable script "charts\-%{_id}%"
-	run section {_async} async and wait
-	wait 1 tick
+	readchart({_name}, {_diff})
+	#读取metadata.txt与提取文件
+	set {_tags::*} to content of file path "GAME/levels/%{_name}%/metadata.txt"
+	set {song} to {_tags::1}
+	set {artist} to {_tags::2}
+	set {path} to {_tags::3}
+	replace first "曲名=" with "" in {song}
+	replace first "曲师=" with "" in {artist}
+	replace first "音乐=" with "" in {path}
+	set {path} to "GAME/levels/%{_name}%/%{path}%"
+	set {_line1} to line 1 of file path "GAME/levels/%{_name}%/%{_diff}%.chart"
+	set {_s::*} to {_line1} split at " "
+	if {_s::1} is "level":
+		set {level} to "&bEasy %{_s::2}%" if {_diff} is "easy"
+		set {level} to "&aBasic %{_s::2}%" if {_diff} is "basic"
+		set {level} to "&6Hard %{_s::2}%" if {_diff} is "hard"
+		set {level} to "&dChallenge %{_s::2}%" if {_diff} is "challenge"
+		set {level} to "&7Inferno %{_s::2}%" if {_diff} is "inferno"
+	while {process} is set:
+		if {-readcomplete} is true:
+			set {_ctn} to true
+			exit loop
+		else:
+			wait 1 tick
+	clear {-readcomplete}
+	{_ctn} is true
 	if {editMode} is true:
-		set {editor::bpm} to {bpm::%{_id}%}
-		set {editor::tick} to 0
-		set {editor::preTime} to 0
-		addTick({actor}, 0)
-		delete {process}
-		send title "" with subtitle "&a谱面已读取完毕" to all players for 1 second with fade in 0 seconds and fade out 0 seconds
+		clear {process}
+		set {_preload} to preload({path})
+		if {_preload} is not "加载完毕":
+			send "&c音频加载失败: %{_preload}%" to {_p}
 	else:
 		set {process} to 25
-		set {playing} to {_id}
-		wait 0.5 seconds
-		execute {actor} command "start"
-	delete {actor} if {editMode} is true
-
-function refresh(p: player):
-	delete {loadedCharts::*}
-	delete {length::*}
-	delete {chartOffset::*}
-	loop enabled scripts:
-		loop-value start with "charts"
-		if loop-value contains "_properties":
-			disable script loop-value
-	wait 1 tick
-	loop disabled scripts:
-		loop-value start with "charts"
-		if loop-value contains "_properties":
-			enable script loop-value
-	wait 5 ticks
-	infoGUI({_p})
-
-function registerChart(id: text, name: text, level: text, artist: text, author: text, length: number, offset: number):
-	add {_id} to {loadedCharts::id::*}
-	add {_name} to {loadedCharts::name::*}
-	add {_level} to {loadedCharts::level::*}
-	add {_artist} to {loadedCharts::artist::*}
-	add {_author} to {loadedCharts::author::*}
-	set {length::%{_id}%} to {_length}
-	set {chartOffset::%{_id}%} to {_offset}
-
-function setBPM(id: text, bpm: number):
-	set {bpm::%{_id}%} to {_bpm}
-
-command /play:
-	trigger:
-		player's gamemode is not spectator
-		if {loaded} is set:
-			delete {loaded}
-			refresh(player)
+		set {playing} to {_name}
+		if {actor} is set:
+			start({actor})
 		else:
-			infoGUI(player)
-
-function infoGUI(p: player):
-	if {actor} is not set:
-		set {_infoGUI} to chest inventory with 6 rows named "选择谱面"
-		loop integers from 47 to 51:
-			set slot loop-value of {_infoGUI} to gray stained glass pane named ""
-		set slot 45 of {_infoGUI} to oak sign named "&f喜欢 &eCube Rhythm&f 吗？" with lore "&7加入我们的QQ群聊%nl%&b300846184%nl%&7和大家一起分享谱面!"
-		set slot 46 of {_infoGUI} to book named "&a◆ &f如何导入谱面？" with lore "%nl%&e1. &7打开目录 &f服务端\plugins\Skript\scripts\charts%nl%&e2. &7把谱面文件&f(谱面.sk 和 谱面_properties.sk)&7扔进去%nl%&e3. &7输入 &b/sk reload \charts\ &7稍等片刻即可导入%nl%   &c(需要管理员权限 后台输入op %name of {_p}%)%nl%%nl%&a◆ &f如何写谱？%nl%%nl%&7请浏览：%nl%&7https://github.com/EroslonDusk/CubeRhythm/wiki%nl%&a"
-		set slot 52 of {_infoGUI} to comparator named "&f设置" with lore "%nl%&7包括调速、偏移等更多选项%nl%%nl%&e点击查看"
-		set slot 53 of {_infoGUI} to slime ball named "&a刷新列表" with lore "%nl%&7重载所有谱面配置文件并刷新列表%nl%&f如果你想导入新谱面，这个按钮并不能帮你%nl%%nl%&e点击刷新"
-		loop indices of {loadedCharts::id::*}:
-			set {_slot} to (loop-value parsed as integer) - 1
-			{_slot} is set
-			set {_best} to {best::%uuid of {_p}%::%{loadedCharts::id::%loop-value%}%}
-			set {_best} to 0 if {_best} is not set
-			set {_t} to "%{length::%{loadedCharts::id::%loop-value%}%}% seconds" parsed as timespan
-			set {_dura} to ({_t} from (unix date of 0)) formatted as "m:ss"
-			set {_bpm} to {bpm::%{loadedCharts::id::%loop-value%}%}
-			set {_bpm} to "&7未知" if {_bpm} is not set
-			delete {_char::*}
-			set {_tempnumber} to ""
-			set {_char::*} to (uncolored {loadedCharts::level::%loop-value%}) split at ""
-			loop {_char::*}:
-				set {_tempnumber} to "%{_tempnumber}%%loop-value-2%" if loop-value-2 is "0" or "1" or "2" or "3" or "4" or "5" or "6" or "7" or "8" or "9"
-			set {_tempnumber} to {_tempnumber} parsed as number
-			set {_item} to music disc cat named "&f%{loadedCharts::name::%loop-value%}%" with lore "%nl%&8· &7难度: &f%{loadedCharts::level::%loop-value%}%%nl%&8· &7作曲: &f%{loadedCharts::artist::%loop-value%}%%nl%&8· &7谱师: &f%{loadedCharts::author::%loop-value%}%%nl%&8· &7时长: &f%{_dura}%%nl%&8· &7BPM: &f%{_bpm}%%nl%&8· &7最好成绩: &f%{_best}% &7%getRank({_best})%%nl%%nl%&7输入 /reset 离开游戏%nl%%nl%&8[&a左键&8] &f开始游玩%nl%&8[&d右键&8] &c删除成绩%nl%&f"
-			set item amount of {_item} to {_tempnumber} if {_tempnumber} > 0
-			set slot {_slot} of {_infoGUI} to {_item}
-		open {_infoGUI} to {_p}
-	else:
-		send "&c游戏期间不可打开面板！如果要退出游玩，请输入 /reset ！%nl%&7如果游戏尚未开始，请输入 /sk reload main" to {_p}
+			clear {process}
+			quitGame()
+	clear {actor} if {editMode} is true
 
 function getRank(score: number) :: text:
 	return "&eSSS+" if {_score} >= 1000000
@@ -130,6 +59,7 @@ function getRank(score: number) :: text:
 	return "&2C" if {_score} is between 899999 and 850000
 	return "&7D" if {_score} <= 849999
 
+###
 function deleteScoreGUI(id: text, p: player):
 	set metadata value "prepareToDelete" of {_p} to {_id}
 	set {_infoGUI} to chest inventory with 5 rows named "清除该曲成绩？"
@@ -144,8 +74,8 @@ function deleteScoreGUI(id: text, p: player):
 	loop integers from 35 to 44:
 		set slot loop-value of {_infoGUI} to red stained glass pane named ""
 	set slot 20 of {_infoGUI} to lime wool named "&a清除成绩" with lore "&c此操作无法撤销！"
-	set slot 24 of {_infoGUI} to red wool named "&c返回" with lore "&f选歌界面"
 	open {_infoGUI} to {_p}
+###
 
 function settingsGUI(p: player):
 	set {_infoGUI} to chest inventory with 6 rows named "设置"
@@ -168,26 +98,13 @@ function settingsGUI(p: player):
 	set slot 24 of {_infoGUI} to piston named "&f自动演奏: %{autoPlay::%uuid of {_p}%}%" with lore "%nl%&7自动演奏歌曲，无需操作%nl%&f该模式下游玩成绩无效%nl%%nl%&e点击开启/关闭"
 	set slot 29 of {_infoGUI} to redstone named "&f在判定提示中显示偏移: %{showOffset::%uuid of {_p}%}%" with lore "%nl%&7替换打击特效中的Exact/Just字样为%nl%&7音符到达判定面时间与被击打时间的差值%nl%%nl%&e点击开启/关闭"
 	set slot 30 of {_infoGUI} to white concrete named "&f小节提示线: %{showLine::%uuid of {_p}%}%" with lore "%nl%&7在轨道两侧生成提示节拍的细线%nl%%nl%&e点击开启/关闭"
-	set slot 53 of {_infoGUI} to music disc cat named "&a选择谱面" with lore "%nl%&e点击返回"
+	set slot 53 of {_infoGUI} to barrier named "&c关闭"
+	set slot 31 of {_infoGUI} to structure block named "&f编辑谱面: %{useEditor::%uuid of {_p}%}%" with lore "%nl%&7使用编辑器打开或创建谱面%nl%%nl%&e点击开启/关闭"
 	open {_infoGUI} to {_p}
 
 on inventory click:
 	"%current inventory of player%" is "inventory of <none>"
 	cancel event
-	if name of event-inventory is "选择谱面":
-		if index of event-slot < 45:
-			set {_slot} to index of event-slot + 1
-			if {loadedCharts::id::%{_slot}%} is set:
-				if inventory action is pickup half:
-					deleteScoreGUI({loadedCharts::id::%{_slot}%}, player)
-				else:
-					close player's inventory
-					playChart({loadedCharts::id::%{_slot}%})
-					set {actor} to player
-		else:
-			settingsGUI(player) if index of event-slot = 52
-			refresh(player) if event-slot is slime ball
-			set event-slot to barrier named "&c请稍等……" if index of event-slot = 53
 	if name of event-inventory is "设置":
 		setSpeedGUI(player) if index of event-slot = 20
 		setOffsetGUI(player) if index of event-slot = 21
@@ -196,7 +113,8 @@ on inventory click:
 		setAutoPlay(player) if index of event-slot = 24
 		setShowOffset(player) if index of event-slot = 29
 		setLine(player) if index of event-slot = 30
-		infoGUI(player) if index of event-slot = 53
+		setEditor(player) if index of event-slot = 31
+		close player's inventory if index of event-slot = 53
 	if name of event-inventory is "调速":
 		settingsGUI(player) if index of event-slot = 53
 		remove 0.5 from {speed::%uuid of player%} if index of event-slot = 19
@@ -225,16 +143,18 @@ on inventory click:
 		setOffsetGUI(player) if index of event-slot = 24
 		add 1 to {offset::%uuid of player%} if index of event-slot = 23
 		setOffsetGUI(player) if index of event-slot = 23
+###
 	if name of event-inventory is "清除该曲成绩？":
 		set {_id} to metadata value "prepareToDelete" of player
 		if index of event-slot = 20:
-			delete {best::%uuid of player%::%{_id}%}
-			delete metadata value "prepareToDelete" of player
+			clear {best::%uuid of player%::%{_id}%}
+			clear metadata value "prepareToDelete" of player
 			close player's inventory
 			send "&a清除成绩成功" to player
 		if index of event-slot = 24:
-			infoGUI(player)
-			delete metadata value "prepareToDelete" of player
+			close player's inventory
+			clear metadata value "prepareToDelete" of player
+###
 
 function setSpeedGUI(p: player):
 	set {_infoGUI} to chest inventory with 6 rows named "调速"
@@ -297,4 +217,11 @@ function setLine(p: player):
 		set {showLine::%uuid of {_p}%} to "&c关"
 	else:
 		set {showLine::%uuid of {_p}%} to "&a开"
+	settingsGUI({_p})
+
+function setEditor(p: player):
+	if {useEditor::%uuid of {_p}%} is "&a开":
+		set {useEditor::%uuid of {_p}%} to "&c关"
+	else:
+		set {useEditor::%uuid of {_p}%} to "&a开"
 	settingsGUI({_p})

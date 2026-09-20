@@ -1,0 +1,287 @@
+import:
+	org.bukkit.Color
+
+every ticks:
+	if {pause} is true:
+		{pausetimer} is not set
+		send title "&7 &7" with subtitle "&7游戏暂停……" to {actor} for 2 ticks with fade in 0 ticks and fade out 0 ticks
+	else if {pausetimer} is set:
+		clear {pausetimer}
+	{pause} is not set
+	{-timer} is set
+	{-timer} is not 0
+	{-loaded} is set
+	set {_percent} to {score} / 1000000
+	set level progress of all players to min({_percent}, 0.99)
+
+every ticks:
+	{-timer} is set
+	indices of {-note::*} is set
+	{showLine::%uuid of {actor}%} is "&a开"
+	set {bpm} to 120 if {bpm} is not set
+	set {_playtime} to round(unix timestamp of now * 1000) - {-timer}
+	set {_charttime} to {_playtime} - 3000 - {offset} - {offset::%uuid of {actor}%}
+	set {_beat} to floor({_charttime} / 60000 * {bpm})
+	{-beatlinesummoned::%{_beat}%} is not set
+	set {-beatlinesummoned::%{_beat}%} to true
+	mod({_beat},2) = 0
+	set {_beattime} to ({_beat} + 4) / {bpm} * 60000
+	set {_distance} to ({_beattime} - {_playtime} + 3000 + {offset} + {offset::%uuid of {actor}%}) / 1000 * {speed::%uuid of {actor}%} * 20
+
+	set {_loc::w} to location(0, 0, 3.5+{_distance}, world "world", 180, 0)
+	set {_loc::a} to location(3.5+{_distance}, 0, 0, world "world", 90, 0)
+	set {_loc::s} to location(0, 0, -2.5-{_distance}, world "world", 0, 0)
+	set {_loc::d} to location(-2.5-{_distance}, 0, 0, world "world", -90, 0)
+	set {_tran::w} to vector(-0.63,0.02,0)
+	set {_tran::a} to vector(0.35,0.02,0)
+	set {_tran::s} to vector(0.35,0.02,0)
+	set {_tran::d} to vector(-0.63,0.02,0)
+	loop "w", "a", "s", "d":
+		set {_meta} to text display meta data:
+			display text: "§f"
+			display scale: vector(9.5,9.5,0)
+			display translation: {_tran::%loop-value%}
+			display billboard: fixed
+			display background color: rgb(0,0,0,0)
+			display interpolation delay: 0 ticks
+			display transform interpolation duration: 100 ticks
+			display brightness override: 15
+		set {_e} to a new fake text display entity:
+			viewers: all players
+			location: {_loc::%loop-value%}
+			meta: {_meta}
+		spawn fake entity {_e} at {_loc::%loop-value%}
+		delayTranslation({_e}, vector(0,0,100*{speed::%uuid of {actor}%}))
+		
+		#走到头后销毁实体
+		delayKill({_e}, round({_distance}/{speed::%uuid of {actor}%})+1)
+
+every 8 ticks:
+	#生成音符调度
+	{-timer} is set
+	set {_playtime} to round(unix timestamp of now * 1000) - {-timer}
+	set {_count} to size of all fake entities
+	if {_count} < 100:
+		if all:
+			indices of {-note::*} is not set
+			{_count} = 0
+		then:
+			clear {-timer}
+			end()
+		else:
+			set {_preSummon} to 0
+			loop indices of {-note::*}:
+				set {_summontime} to loop-value parsed as number + {offset} + {offset::%uuid of {actor}%} + 3000
+				set {_tempDistance} to ({_summontime} - {_playtime}) / 1000 * {speed::%uuid of {actor}%} * 20 + 3
+				if {_tempDistance} < 50:
+					add 1 to {_preSummon}
+				else:
+					exit loop
+			{_preSummon} > 0
+			loop indices of {-note::*}:
+				remove 1 from {_preSummon}
+				set {_rawtime} to loop-value
+				set {_summontime} to loop-value parsed as number + {offset} + {offset::%uuid of {actor}%} + 3000
+				set {_summonDistance} to ({_summontime} - {_playtime}) / 1000 * {speed::%uuid of {actor}%} * 20 + 3
+				{_summonDistance} < 50
+				copy {-note::%{_rawtime}%::*} to {-noteused::%{_rawtime}%::*}
+				loop indices of {-note::%{_rawtime}%::*}:
+					set {_id} to loop-value-2
+					set {_type} to {-note::%{_rawtime}%::%{_id}%::type}
+					set {_face} to {-note::%{_rawtime}%::%{_id}%::face}
+					if {_type} is "tap":
+						set {_e} to drawTap({-note::%{_rawtime}%::%{_id}%::face}, {-note::%{_rawtime}%::%{_id}%::x}, {-note::%{_rawtime}%::%{_id}%::y}, {_summonDistance}, {-note::%{_rawtime}%::%{_id}%::glowing})
+						
+						set {_index} to random uuid
+						set {-onstage::%{_index}%::time} to {_summontime}
+						set {-onstage::%{_index}%::type} to {_type}
+						set {-onstage::%{_index}%::face} to {_face}
+						set {-onstage::%{_index}%::x} to {-note::%{_rawtime}%::%{_id}%::x}
+						set {-onstage::%{_index}%::y} to {-note::%{_rawtime}%::%{_id}%::y}
+						set {-onstage::%{_index}%::entity} to {_e}
+						
+					if {_type} is "hold":
+						set {_e} to drawHold({-note::%{_rawtime}%::%{_id}%::face}, {-note::%{_rawtime}%::%{_id}%::x}, {-note::%{_rawtime}%::%{_id}%::y}, {_summonDistance}, {-note::%{_rawtime}%::%{_id}%::glowing})
+						
+						set {_index} to random uuid
+						set {-onstage::%{_index}%::time} to {_summontime}
+						set {-onstage::%{_index}%::type} to {_type}
+						set {-onstage::%{_index}%::face} to {_face}
+						set {-onstage::%{_index}%::x} to {-note::%{_rawtime}%::%{_id}%::x}
+						set {-onstage::%{_index}%::y} to {-note::%{_rawtime}%::%{_id}%::y}
+						set {-onstage::%{_index}%::entity} to {_e}
+						
+					if {_type} is "drag":
+						set {_e} to drawDrag({-note::%{_rawtime}%::%{_id}%::face}, {-note::%{_rawtime}%::%{_id}%::x}, {-note::%{_rawtime}%::%{_id}%::y}, {_summonDistance}, {-note::%{_rawtime}%::%{_id}%::glowing})
+						
+						set {_index} to random uuid
+						set {-onstage::%{_index}%::time} to {_summontime}
+						set {-onstage::%{_index}%::type} to {_type}
+						set {-onstage::%{_index}%::face} to {_face}
+						set {-onstage::%{_index}%::x} to {-note::%{_rawtime}%::%{_id}%::x}
+						set {-onstage::%{_index}%::y} to {-note::%{_rawtime}%::%{_id}%::y}
+						set {-onstage::%{_index}%::entity} to {_e}
+						
+					if {_type} is "flick":
+						set {_e::*} to drawFlick({-note::%{_rawtime}%::%{_id}%::face}, {_summonDistance}, {-note::%{_rawtime}%::%{_id}%::turn}, {-note::%{_rawtime}%::%{_id}%::glowing})
+						
+						set {_index} to random uuid
+						set {-onstage::%{_index}%::time} to {_summontime}
+						set {-onstage::%{_index}%::type} to {_type}
+						set {-onstage::%{_index}%::face} to {_face}
+						set {-onstage::%{_index}%::x} to {-note::%{_rawtime}%::%{_id}%::x}
+						set {-onstage::%{_index}%::y} to {-note::%{_rawtime}%::%{_id}%::y}
+						set {-onstage::%{_index}%::turn} to {-note::%{_rawtime}%::%{_id}%::turn}
+						set {-onstage::%{_index}%::entity} to {_e::1}
+						set {-onstage::%{_index}%::textdisplay} to {_e::2}
+						
+					if {_type} is "double":
+						set {_face} to {-note::%{_rawtime}%::%{_id}%::face}
+						set {_z} to {_summonDistance}
+						set {_x1} to {-note::%{_rawtime}%::%{_id}%::x1}
+						set {_y1} to {-note::%{_rawtime}%::%{_id}%::y1}
+						set {_x2} to {-note::%{_rawtime}%::%{_id}%::x2}
+						set {_y2} to {-note::%{_rawtime}%::%{_id}%::y2}
+						set {_glowing} to {-note::%{_rawtime}%::%{_id}%::glowing}
+						
+						set {_e::*} to drawDouble({_face}, {_x1}, {_y1}, {_z}, {_x2}, {_y2}, {_z}, {_glowing})
+						
+						set {_index} to random uuid
+						set {_index2} to random uuid
+						set {-onstage::%{_index}%::time} to {_summontime}
+						set {-onstage::%{_index}%::type} to {_type}
+						set {-onstage::%{_index}%::face} to {_face}
+						set {-onstage::%{_index}%::x} to {-note::%{_rawtime}%::%{_id}%::x1}
+						set {-onstage::%{_index}%::y} to {-note::%{_rawtime}%::%{_id}%::y1}
+						set {-onstage::%{_index}%::entity} to {_e::1}
+						set {-onstage::%{_index}%::bind} to {_index2}
+						set {-onstage::%{_index}%::line} to {_e::3}
+						
+						set {-onstage::%{_index2}%::time} to {_summontime}
+						set {-onstage::%{_index2}%::type} to {_type}
+						set {-onstage::%{_index2}%::face} to {_face}
+						set {-onstage::%{_index2}%::x} to {-note::%{_rawtime}%::%{_id}%::x2}
+						set {-onstage::%{_index2}%::y} to {-note::%{_rawtime}%::%{_id}%::y2}
+						set {-onstage::%{_index2}%::entity} to {_e::2}
+						set {-onstage::%{_index2}%::bind} to {_index}
+						set {-onstage::%{_index2}%::line} to {_e::3}
+						
+				clear {-note::%{_rawtime}%::*}
+				exit loop if {_preSummon} <= 0
+
+every ticks:
+	#音符落后处理
+	set {_playtime} to round(unix timestamp of now * 1000) - {-timer}
+	set {_misstime} to {_playtime} - 300
+	set {_noinputjudgetime} to {_playtime} + 50
+	
+	loop indices of {-onstage::*}:
+		set {_index} to loop-value
+		if {autoPlay::%uuid of {actor}%} is "&a开":
+			if {-onstage::%{_index}%::type} is "hold":
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime} - 100
+				exact({_index}, 0)
+				deleteNote({_index})
+			else:
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+				exact({_index}, 0)
+				deleteNote({_index})
+		else if {-onstage::%{_index}%::type} is "tap" or "double":
+			{-onstage::%{_index}%::time} <= {_misstime}
+			miss()
+			deleteNote({_index})
+		else if {-onstage::%{_index}%::type} is "hold":
+			if size of {-keys2::*} > 0:
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+				exact({_index}, 0)
+				deleteNote({_index})
+			else:
+				{-onstage::%{_index}%::time} <= {_misstime}
+				miss()
+				deleteNote({_index})
+		else if {-onstage::%{_index}%::type} is "drag":
+			if {-onstage::%{_index}%::hited} is true:
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+				exact({_index}, 0)
+				deleteNote({_index})
+			else:
+				{-onstage::%{_index}%::time} <= {_misstime}
+				miss()
+				deleteNote({_index})
+		else if {-onstage::%{_index}%::type} is "flick":
+			{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+			exact({_index}, 0)
+			checkIfTurned({_index})
+			deleteNote({_index})
+
+function createAnchor(type: text, face: text, loc: location):
+	{actor} is set
+	set {_x} to x of {_loc}
+	set {_y} to y of {_loc}
+	set {_z} to z of {_loc}
+	set {_spawnloc} to location({_x}+0.5, {_y}+0.5, 5, world "world", 180, 0) if {_face} is "w"
+	set {_spawnloc} to location(5, {_y}+0.5, {_z}+0.5, world "world", 90, 0) if {_face} is "a"
+	set {_spawnloc} to location({_x}-0.5, {_y}+0.5, -4, world "world", 0, 0) if {_face} is "s"
+	set {_spawnloc} to location(-4, {_y}+0.5, {_z}-0.5, world "world", -90, 0) if {_face} is "d"
+	summon text display at {_spawnloc}:
+		set text of the entity to "§f"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set {_e} to entity
+	set {_dis} to {_z} if {_face} is "w"
+	set {_dis} to {_x} if {_face} is "a"
+	set {_dis} to {_z} * -1 if {_face} is "s"
+	set {_dis} to {_x} * -1 if {_face} is "d"
+	set {_color} to "§3" if {_type} is "tap"
+	set {_color} to "§e" if {_type} is "drag"
+	set {_color} to "§6" if {_type} is "double"
+	while {_e} is alive:
+		if {pause} is set:
+			wait 1 tick
+		else:
+			remove {speed::%uuid of {actor}%} from {_dis}
+			if {_dis} < 20:
+				set {_alpha} to 100 - ({_dis} - 4) * 4 if {_face} is "w"
+				set {_alpha} to 100 - ({_dis} - 4) * 4 if {_face} is "a"
+				set {_alpha} to 100 - ({_dis} - 3) * 4 if {_face} is "s"
+				set {_alpha} to 100 - ({_dis} - 3) * 4 if {_face} is "d"
+				set {_alpha} to max(1, min(100, {_alpha}))
+				set {_scale} to 2 - {_alpha}/100
+				set display scale of {_e} to vector({_scale},{_scale},{_scale})
+				set display translation of {_e} to vector({_scale}*-0.005+0.005,{_scale}*-0.05+0.05,0)
+				set opacity of {_e} to {_alpha} * 2
+				if {_alpha} <= 10:
+					set text of {_e} to "§f"
+				else:
+					set text of {_e} to "§f%{_color}%"
+			if {_dis} <= 2:
+				kill {_e}
+				exit loop
+			wait 1 tick
+
+#边框特效
+every ticks:
+	if {actor} is set:
+		set {_p} to {actor}
+	else:
+		set {_p0::*} to players in radius 1 around location(0.5, -1, 0.5, world "world", 0, 0)
+		set {_p} to {_p0::1}
+	{_p} is set
+	set {_face} to getFace({_p})
+	loop {-border::*}:
+		loop-index is not {_face}
+		set {_1} to max(0, block light override of loop-value - 2)
+		set block light override of loop-value to {_1}
+		set sky light override of loop-value to {_1}
+	set {_2} to min(15, block light override of {-border::%{_face}%} + 2)
+	set block light override of {-border::%{_face}%} to {_2}
+	set sky light override of {-border::%{_face}%} to {_2}
+
+function getFace(p: player) :: text:
+	set {_yaw} to yaw of {_p}
+	set {_yaw} to {_yaw} - 360 if {_yaw} > 180
+	set {_yaw} to {_yaw} + 360 if {_yaw} < -180
+	return "w" if {_yaw} is between -45 and 45
+	return "a" if {_yaw} is between -135 and -45
+	return "s" if {_yaw} is between -180 and -135
+	return "s" if {_yaw} is between 135 and 180
+	return "d" if {_yaw} is between 45 and 135

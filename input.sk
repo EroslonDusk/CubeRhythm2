@@ -1,0 +1,139 @@
+import:
+	org.bukkit.Color
+
+on serverbound player input packet sync processed:
+	set {_raw} to "%event-packet%"
+	replace all "  ", new line, "WrapperPlayClientPlayerInput:" with "" in {_raw}
+	replace all "sprint: false", "jump: false", "forward: false", "backward: false", "right: false", "shift: false", "left: false" with "" in {_raw}
+	replace all "sprint: true" with "C" in {_raw}
+	replace all "jump: true" with "J" in {_raw}
+	replace all "forward: true" with "W" in {_raw}
+	replace all "backward: true" with "S" in {_raw}
+	replace all "right: true" with "D" in {_raw}
+	replace all "shift: true" with "T" in {_raw}
+	replace all "left: true" with "A" in {_raw}
+#	send {_raw} to player
+	set {_size} to size of {-keys2::*}
+	clear {-keys::*}
+	if {_raw} is not "":
+		set {-keys::*} to {_raw} split at ""
+		remove all "" from {-keys::*}
+	copy {-keys::*} to {-keys2::*}
+	loop {-keys2::*}:
+		if loop-value is "A", "S" or "D":
+			set {_null} to {_null}
+		else:
+			clear {-keys2::%loop-index%}
+	set {_size2} to size of {-keys2::*}
+	if {_size} > {_size2}:
+		stop
+	else:
+		{pause} is not set
+		loop {_size2} - {_size} times:
+			set {_get::*} to getNearestTarget(getCursorPos(player), player)
+			{_get::*} is set
+			set {_index} to {_get::1}
+			set {_distance} to {_get::2}
+			if {-onstage::%{_index}%::type} is "double":
+				if {-onstage::%{-onstage::%{_index}%::bind}%::entity} is set:
+					set {_bind} to {-onstage::%{_index}%::bind} #打a消b
+					if abs({_distance}) <= 80:
+						exact({_bind}, {_distance})
+					else if {_distance} is between 81 and 200:
+						great({_bind}, "early", {_distance})
+					else if {_distance} is between -200 and -81:
+						great({_bind}, "late", {_distance})
+					deleteNote({_bind})
+				else:
+					if abs({_distance}) <= 80:
+						exact({_index}, {_distance})
+					else if {_distance} is between 81 and 200:
+						great({_index}, "early", {_distance})
+					else if {_distance} is between -200 and -81:
+						great({_index}, "late", {_distance})
+					deleteNote({_index})
+			else:
+				if abs({_distance}) <= 80:
+					exact({_index}, {_distance})
+				else if {_distance} is between 81 and 200:
+					great({_index}, "early", {_distance})
+				else if {_distance} is between -200 and -81:
+					great({_index}, "late", {_distance})
+				deleteNote({_index})
+	
+	if {_raw} is "J":
+		if {editMode} is true:
+			editplay()
+		else if {actor} is not set:
+			if {-holopage} is set:
+				songInfoGUI()
+			else if all:
+				{-holopage} is not set
+				{-songselected} is set
+				{-diffselected} is set
+			then:
+				selectSong()
+	
+	if {_raw} contains "W":
+		if {editMode} is true:
+			addTick(player, 1)
+			set {-banautotick} to true
+			play sound "block.note_block.hat" with pitch 2 to player
+		else if {actor} is not set:
+			if {-holopage} is set:
+				remove 1 from {-holopage}
+				set {-banautotick} to true
+				play sound "block.note_block.hat" with pitch 2 to player
+				mainGUIUpdate()
+			else if {-diffselected} is set:
+				set {_diffpast} to {-diffselected}
+				set {-diffselected} to getPreviousDiff({-diffselected})
+				loop entities where [metadata value "maingui_diff" of input is set]:
+					set {_diffraw} to metadata value "maingui_diff" of loop-entity
+					if {_diffraw} is {-diffselected}:
+						loop-entity.setBackgroundColor(Color.fromARGB(40,255,255,255))
+						set {_dloc3} to location of loop-entity
+						set {_dloc4} to location of loop-entity
+						{_dloc4}.add(1,0,0)
+						easingMotion(loop-entity, {_dloc3}, {_dloc4}, "expb", "1", "1", "1", "1", 10)
+					else if {_diffraw} is {_diffpast}:
+						loop-entity.setBackgroundColor(Color.fromARGB(40,100,100,100))
+						set {_dloc3} to location of loop-entity
+						set {_dloc4} to location of loop-entity
+						set x of {_dloc4} to metadata value "maingui_x" of loop-entity
+						easingMotion(loop-entity, {_dloc3}, {_dloc4}, "expb", "1", "1", "1", "1", 10)
+
+	if {_raw} contains "S":
+		if {editMode} is true:
+			addTick(player, -1)
+			set {-banautotick} to true
+			play sound "block.note_block.hat" with pitch 1.5 to player
+		else if {actor} is not set:
+			if {-holopage} is set:
+				add 1 to {-holopage}
+				set {-banautotick} to true
+				play sound "block.note_block.hat" with pitch 1.5 to player
+				mainGUIUpdate()
+			else if {-diffselected} is set:
+				set {_diffpast} to {-diffselected}
+				set {-diffselected} to getNextDiff({-diffselected})
+				loop entities where [metadata value "maingui_diff" of input is set]:
+					set {_diffraw} to metadata value "maingui_diff" of loop-entity
+					if {_diffraw} is {-diffselected}:
+						loop-entity.setBackgroundColor(Color.fromARGB(40,255,255,255))
+						set {_dloc3} to location of loop-entity
+						set {_dloc4} to location of loop-entity
+						{_dloc4}.add(1,0,0)
+						easingMotion(loop-entity, {_dloc3}, {_dloc4}, "expb", "1", "1", "1", "1", 10)
+					else if {_diffraw} is {_diffpast}:
+						loop-entity.setBackgroundColor(Color.fromARGB(40,100,100,100))
+						set {_dloc3} to location of loop-entity
+						set {_dloc4} to location of loop-entity
+						set x of {_dloc4} to metadata value "maingui_x" of loop-entity
+						easingMotion(loop-entity, {_dloc3}, {_dloc4}, "expb", "1", "1", "1", "1", 10)
+	
+	if {_raw} contains "C":
+		{actor} is not set
+		{-diffselected} is set
+		clear {-diffselected}
+		mainGUI({-indexselected})

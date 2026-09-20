@@ -1,0 +1,62 @@
+import:
+	javax.sound.sampled.AudioSystem
+	javax.sound.sampled.Clip
+	javax.sound.sampled.DataLine
+	java.io.File
+
+function preload(path: text) :: text:
+	if file path {_path} is not missing:
+		clear {-loaded}
+		set {_file} to new File({_path})
+		set {_ais} to AudioSystem.getAudioInputStream({_file})
+		if {_ais} is set:
+			set {_info} to new DataLine.Info(Clip.class, {_ais}.getFormat())
+			set {_clip} to AudioSystem.getLine({_info})
+			{_clip}.open({_ais})
+			{_clip}.setFramePosition(0)
+			set {-loaded} to {_clip}
+			{_ais}.close()
+			return "加载完毕"
+		else:
+			return "音频加载失败，请检查是否转码为wav格式"
+	else:
+		return "音频文件不存在，请检查配置文件"
+
+function newPreload(path: text, index: text) :: text:
+	if file path {_path} is not missing:
+		set {_file} to new File({_path})
+		set {_ais} to AudioSystem.getAudioInputStream({_file})
+		if {_ais} is set:
+			set {_info} to new DataLine.Info(Clip.class, {_ais}.getFormat())
+			set {_clip} to AudioSystem.getLine({_info})
+			{_clip}.open({_ais})
+			{_clip}.setFramePosition(0)
+			set {-soundx::%{_index}%} to {_clip}
+			{_ais}.close()
+			return "加载完毕"
+		else:
+			return "音频加载失败，请检查是否转码为wav格式"
+	else:
+		return "音频文件不存在，请检查配置文件"
+
+function music(cmd: text, time: number=0):
+	if {_cmd} is "start":
+		if {-loaded} is set:
+			if {-playtime} is set:
+				{-loaded}.setMicrosecondPosition({-playtime})
+			else:
+				{-loaded}.setFramePosition(0)
+			{-loaded}.start()
+	if {_cmd} is "startatposition":
+		if {-loaded} is set:
+			set {-playtime} to round({_time} * 1000000)
+			{-loaded}.setMicrosecondPosition({-playtime})
+			{-loaded}.start()
+	if {_cmd} is "stop":
+		{-loaded}.stop()
+		{-loaded}.flush()
+		{-loaded}.close()
+		clear {-playtime}
+	if {_cmd} is "pause":
+		set {-playtime} to {-loaded}.getMicrosecondPosition()
+		{-loaded}.stop()

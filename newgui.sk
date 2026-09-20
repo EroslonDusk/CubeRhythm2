@@ -1,0 +1,412 @@
+import:
+	org.bukkit.Color
+
+function mainGUI(index: number=1):
+	kill all text displays
+	kill all block displays
+	
+	clear {-hologui::*}
+	set {-holopage} to {_index}
+	
+	loop all dirs of dir path "GAME/levels":
+		set {_name} to dir name of loop-path
+		set {_id} to (dir name of loop-path) hashed with MD5
+		
+		#读取metadata.txt与提取文件
+		set {_tags::*} to content of file path "GAME/levels/%{_name}%/metadata.txt"
+		set {_title} to {_tags::1}
+		set {_artist} to {_tags::2}
+		set {_music} to {_tags::3}
+		replace first "曲名=" with "" in {_title}
+		replace first "曲师=" with "" in {_artist}
+		replace first "音乐=" with "" in {_music}
+		file path "GAME/levels/%{_name}%/%{_music}%" is not missing
+		{-unicode::%{_id}%} is set
+		set {_bg} to character at codepoint fromBase({-unicode::%{_id}%}, 16)
+		
+		set {_index} to size of indices of {-hologui::*} + 1
+		set {-hologui::%{_index}%::title} to {_title}
+		set {-hologui::%{_index}%::artist} to {_artist}
+		set {-hologui::%{_index}%::music} to "GAME/levels/%{_name}%/%{_music}%"
+		set {-hologui::%{_index}%::bg} to {_bg}
+		set {-hologui::%{_index}%::raw} to {_name}
+		
+		clear {_levels::*}
+		loop "easy", "basic", "hard", "challenge", "inferno":
+			if file path "GAME/levels/%{_name}%/%loop-value-2%.chart" is missing:
+				add "&8-" to {_levels::*}
+			else:
+				set {_line1} to line 1 of file path "GAME/levels/%{_name}%/%loop-value-2%.chart"
+				set {_s::*} to {_line1} split at " "
+				{_s::1} is "level"
+				add "&b%{_s::2}%" to {_levels::*} if loop-value-2 is "easy"
+				add "&a%{_s::2}%" to {_levels::*} if loop-value-2 is "basic"
+				add "&6%{_s::2}%" to {_levels::*} if loop-value-2 is "hard"
+				add "&d%{_s::2}%" to {_levels::*} if loop-value-2 is "challenge"
+				add "&7%{_s::2}%" to {_levels::*} if loop-value-2 is "inferno"
+				if {-hologui::%{_index}%::bpm} is not set:
+					set {_line2} to line 3 of file path "GAME/levels/%{_name}%/%loop-value-2%.chart"
+					set {_s2::*} to {_line2} split at " "
+					set {-hologui::%{_index}%::bpm} to {_s2::2}
+		set {_level} to join {_levels::*} by " "
+		
+		set {-hologui::%{_index}%::level} to {_level}
+	
+	mainGUIUpdate()
+
+function mainGUIUpdate():
+	{-holopage} is set
+	set {_tempholopage} to {-holopage}
+	kill entities where [metadata value "maingui_indexraw" of input is set]
+	set {_loc} to location(-5, 8, 10, world "world", 180, 0)
+	set {_loc3} to location(3, 20, 10, world "world", 180, 0)
+	set {_loc4} to location(3, 0.5, 10, world "world", 180, 0)
+	set {_loc5} to location(30, 0.5, 10, world "world", 180, 0)
+	set {_loc6} to location(1.9, 22.7, 10, world "world", 180, 0)
+	set {_loc7} to location(1.9, 2.7, 10, world "world", 180, 0)
+	set {_loc8} to location(1.9, -3.2, 10, world "world", 180, 0)
+	loop entities where [metadata value "maingui_image" of input is true]:
+		easingMotion(loop-entity, {_loc4}, {_loc5}, "expb", "1", "1", "1", "1", 10)
+		delayKill2(loop-entity, 10)
+
+	loop integers from {-holopage}-4 to {-holopage}+4:
+		set {_index} to loop-value
+		set {_indexraw} to loop-value
+		if {-hologui::%{_index}%::title} is not set:
+			set {_index} to mod({_index}, size of indices of {-hologui::*})
+			set {_index} to size of indices of {-hologui::*} if {_index} = 0
+
+		summon text display at {_loc}:
+			set display scale of entity to vector(2,2,2)
+			set display translation of the entity to vector(0,0,0)
+			set sky light override of the entity to 15
+			set block light override of the entity to 15
+			set text of the entity to "                                                 %nl%§f  %{-hologui::%{_index}%::title}%  %nl%  %{-hologui::%{_index}%::level}%%nl%"
+			set text alignment of the entity to left aligned
+			set teleport duration of entity to 2 ticks
+			set metadata value "maingui_index" of entity to {_index}
+			set metadata value "maingui_indexraw" of entity to {_indexraw}
+			if {_indexraw} is {-holopage}:
+				entity.setBackgroundColor(Color.fromARGB(40,255,255,255))
+				set {_loc2} to {_loc}
+				{_loc2}.add(1,0,0)
+				easingMotion(entity, {_loc}, {_loc2}, "expb", "1", "1", "1", "1", 10)
+				set {-songselected} to {-hologui::%{_index}%::raw}
+				set {-indexselected} to {_indexraw}
+			else:
+				entity.setBackgroundColor(Color.fromARGB(40,100,100,100))
+
+		{_loc}.add(0,-2.1,0)
+	
+	set {_index2} to {-holopage}
+	if {-hologui::%{-holopage}%::title} is not set:
+		set {_index2} to mod({-holopage}, size of indices of {-hologui::*})
+		set {_index2} to size of indices of {-hologui::*} if {_index2} = 0
+	
+	summon text display at {_loc3}:
+		set display scale of entity to vector(1,1,1)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "&f%{-hologui::%{_index2}%::bg}%"
+		set text alignment of the entity to left aligned
+		set teleport duration of entity to 2 ticks
+		set metadata value "maingui_index" of entity to {_index2}
+		set metadata value "maingui_image" of entity to true
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		easingMotion(entity, {_loc3}, {_loc4}, "1", "expb", "1", "1", "1", 10)
+	
+	summon text display at {_loc6}:
+		set display scale of entity to vector(2,2,2)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set {_bpm} to {-hologui::%{_index2}%::bpm}
+		set {_bpm} to "&7-" if {-hologui::%{_index2}%::bpm} is not set
+		set text of the entity to "&f                           %nl%&7艺术家:&f %{-hologui::%{_index2}%::artist}%%nl%&7BPM:&f %{_bpm}%"
+		set text alignment of the entity to left aligned
+		set teleport duration of entity to 2 ticks
+		set metadata value "maingui_indexraw" of entity to {_index2}
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		easingMotion(entity, {_loc6}, {_loc7}, "1", "expb", "1", "1", "1", 10)
+	
+	summon text display at {_loc8}:
+		set display scale of entity to vector(2,2,2)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "&f                           %nl%&7[W][S] 上/下选择%nl%&7[Space] 确认%nl%&7[F] 游戏设置"
+		set text alignment of the entity to left aligned
+		set teleport duration of entity to 2 ticks
+		set metadata value "maingui_indexraw" of entity to {_index2}
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+	
+	loop indices of {-soundx::*}:
+		{-soundx::%loop-value%}.stop()
+		{-soundx::%loop-value%}.flush()
+		{-soundx::%loop-value%}.close()
+		clear {-soundx::%loop-value%}
+	wait 3 ticks
+	if all:
+		{-wkeyvl} < 6
+		{-skeyvl} < 6
+	then:
+		{-holopage} = {_tempholopage}
+		set {_id} to "%random uuid%"
+		newPreload({-hologui::%{_index2}%::music}, {_id})
+		{-soundx::%{_id}%}.setMicrosecondPosition(0)
+		{-soundx::%{_id}%}.start()
+
+function songInfoGUI():
+	clear {-holopage}
+	loop entities where [metadata value "maingui_indexraw" of input is set]:
+		set {_pos1} to location of loop-entity
+		set {_pos2} to location of loop-entity
+		if x of {_pos2} > 0:
+			{_pos2}.add(20,0,0)
+		else:
+			{_pos2}.add(-20,0,0)
+		easingMotion(loop-entity, {_pos1}, {_pos2}, "expb", "1", "1", "1", "1", 10)
+		delayKill2(loop-entity, 10)
+
+	set {_p} to random element out of all players
+	set {_loc1} to location(3, 0.5, 10, world "world", 180, 0)
+	set {_loc2} to location(3, 0.5, 7, world "world", 180, 0)
+	set {_loc3} to location(6, 2, 10, world "world", 180, 0)
+	loop entities where [metadata value "maingui_image" of input is true]:
+		easingMotion(loop-entity, {_loc1}, {_loc2}, "expb", "expb", "expb", "1", "1", 5)
+		wait 5 ticks
+		easingMotion(loop-entity, {_loc2}, {_loc3}, "3c", "3c", "3c", "1", "1", 5)
+
+	set {_dloc} to location(-5, 4, 10, world "world", 180, 0)
+	set {-diffselected} to "easy"
+	loop "easy", "basic", "hard", "challenge", "inferno":
+		if file path "GAME/levels/%{-songselected}%/%loop-value%.chart" is missing:
+			set {_getlevel} to "&8-"
+			set {_getauthor} to ""
+		else:
+			set {_line1} to line 1 of file path "GAME/levels/%{-songselected}%/%loop-value%.chart"
+			set {_line2} to line 2 of file path "GAME/levels/%{-songselected}%/%loop-value%.chart"
+			set {_s::*} to {_line1} split at " "
+			set {_s2::*} to {_line2} split at " "
+			if {_s::1} is "level":
+				set {_getlevel} to {_s::2}
+			if {_s2::1} is "author":
+				set {_getauthor} to {_s2::2}
+		set {_diffraw} to loop-value
+		set {_diff} to "&bEasy %{_getlevel}%" if loop-value is "easy"
+		set {_diff} to "&aBasic %{_getlevel}%" if loop-value is "basic"
+		set {_diff} to "&6Hard %{_getlevel}%" if loop-value is "hard"
+		set {_diff} to "&dChallenge %{_getlevel}%" if loop-value is "challenge"
+		set {_diff} to "&7Inferno %{_getlevel}%" if loop-value is "inferno"
+		set {_dloc2} to {_dloc}
+		{_dloc2}.add(-20,0,0)
+		
+		summon text display at {_dloc2}:
+			set display scale of entity to vector(2,2,2)
+			set display translation of the entity to vector(0,0,0)
+			set sky light override of the entity to 15
+			set block light override of the entity to 15
+			set text of the entity to "                                                 %nl%§f  %{_diff}%&8  %nl%  %{_getauthor}%%nl%"
+			set text alignment of the entity to left aligned
+			set teleport duration of entity to 2 ticks
+			set metadata value "maingui_diff" of entity to {_diffraw}
+			set metadata value "maingui_x" of entity to x of {_dloc}
+			easingMotion(entity, {_dloc2}, {_dloc}, "expb", "1", "1", "1", "1", 10)
+			entity.setBackgroundColor(Color.fromARGB(40,100,100,100))
+		summon text display at {_dloc2}:
+			set display scale of entity to vector(4,4,4)
+			set display translation of the entity to vector(0,0,0)
+			set sky light override of the entity to 15
+			set block light override of the entity to 15
+			set {_score} to {best::%uuid of {_p}%::%{-songselected}%::%uncolored {_diff}%}
+			if {_score} is set:
+				set text of the entity to "                              %nl%§f%{_score}% &f%getRank({_score})%&8"
+			else:
+				set text of the entity to "                              %nl%§8未游玩"
+			set text alignment of the entity to right aligned
+			set teleport duration of entity to 2 ticks
+			set metadata value "maingui_isscore" of entity to true
+			easingMotion(entity, {_dloc2}, {_dloc}, "expb", "1", "1", "1", "1", 10)
+			entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		{_dloc}.add(0,-2.1,0)
+	
+	wait 10 ticks
+	loop entities where [metadata value "maingui_diff" of input is set]:
+		metadata value "maingui_isscore" of loop-entity is not set
+		set {_diffraw} to metadata value "maingui_diff" of loop-entity
+		if {_diffraw} is {-diffselected}:
+			loop-entity.setBackgroundColor(Color.fromARGB(40,255,255,255))
+			set {_dloc3} to location of loop-entity
+			set {_dloc4} to location of loop-entity
+			{_dloc4}.add(1,0,0)
+			easingMotion(loop-entity, {_dloc3}, {_dloc4}, "expb", "1", "1", "1", "1", 10)
+		else:
+			loop-entity.setBackgroundColor(Color.fromARGB(40,100,100,100))
+	
+	set {_loc8} to location(5, -3.5, 10, world "world", 180, 0)
+	summon text display at {_loc8}:
+		set display scale of entity to vector(2,2,2)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "&f                           %nl%&7[W][S] 上/下选择%nl%&7[Space] 确认%nl%&7[Ctrl] 返回上一级%nl%&7[F] 游戏设置"
+		set text alignment of the entity to left aligned
+		set teleport duration of entity to 2 ticks
+		set metadata value "maingui_indexraw" of entity to 0
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+
+function selectSong():
+	{-holopage} is not set
+	{-songselected} is set
+	{-diffselected} is set
+	set {_p} to random element out of all players
+	set {_song} to {-songselected}
+	set {_diff} to {-diffselected}
+	loop entities where [metadata value "maingui_diff" of input is set]:
+		set {_diffraw} to metadata value "maingui_diff" of loop-entity
+		if {_diffraw} is {_diff}:
+			set {_se} to loop-entity
+			settdbgcolor({_se})
+	if {useEditor::%uuid of {_p}%} is "&a开":
+		set {_ctn} to true
+	else:
+		set {_path} to "GAME/levels/%{_song}%/%{_diff}%.chart"
+		if file path {_path} is not missing:
+			set {_ctn} to true
+		else:
+			send action bar "&c该难度不存在" to all players
+	{_ctn} is true
+	clear {-diffselected}
+	clear {-songselected}
+	loop indices of {-soundx::*}:
+		{-soundx::%loop-value%}.stop()
+		{-soundx::%loop-value%}.flush()
+		{-soundx::%loop-value%}.close()
+		clear {-soundx::%loop-value%}
+	loop entities where [metadata value "maingui_indexraw" of input is set]:
+		set {_loc} to location of loop-entity
+		set {_loc2} to location of loop-entity
+		{_loc2}.add(30,0,0)
+		easingMotion(loop-entity, {_loc}, {_loc2}, "expb", "1", "1", "1", "1", 10)
+		delayKill2(loop-entity, 10)
+	loop entities where [metadata value "maingui_image" of input is set]:
+		set {_loc} to location of loop-entity
+		set {_loc2} to location of loop-entity
+		{_loc2}.add(-2.75,-0.75,-5)
+		easingMotion(loop-entity, {_loc}, {_loc2}, "expb", "expb", "expb", "1", "1", 10)
+		delayKill2(loop-entity, 10)
+		settdopacity(loop-entity)
+	set {_e::*} to entities where [metadata value "maingui_diff" of input is set]
+	loop indices of {_e::*}:
+		if metadata value "maingui_diff" of {_e::%loop-value%} is {_diff}:
+			clear {_e::%loop-value%}
+	loop size of {_e::*} times:
+		set {_rand} to random element out of {_e::*}
+		remove {_rand} from {_e::*}
+		set {_loc} to location of {_rand}
+		set {_loc2} to location of {_rand}
+		{_loc2}.add(-30,0,0)
+		easingMotion({_rand}, {_loc}, {_loc2}, "expb", "1", "1", "1", "1", 10)
+		delayKill2({_rand}, 10)
+		wait 2 ticks
+	set {_loc} to location of {_se}
+	set {_loc2} to location of {_se}
+	{_loc2}.add(-30,0,0)
+	easingMotion({_se}, {_loc}, {_loc2}, "expb", "1", "1", "1", "1", 10)
+	delayKill2({_se}, 10)
+	wait 3 ticks
+	if {useEditor::%uuid of {_p}%} is "&a开":
+		set {_path} to "GAME/levels/%{_song}%/%{_diff}%.chart"
+		if file path {_path} is not missing:
+			createComboDisplay()
+			editor({_p}, {_song}, {_diff})
+		else:
+			create file path {_path}
+			append "level 1" to file path {_path}
+			append "author -" to file path {_path}
+			append "bpm 120" to file path {_path}
+			append "offset 0" to file path {_path}
+			editor({_p}, {_song}, {_diff})
+	else:
+		createComboDisplay()
+		playChart({_song}, {_diff}, {_p})
+		set {actor} to {_p}
+
+function settdbgcolor(e: entity):
+	{_e}.setBackgroundColor(Color.fromARGB(150,255,255,255))
+	set {_max} to 150
+	loop 10 times:
+		remove 10 from {_max}
+		{_e}.setBackgroundColor(Color.fromARGB({_max},255,255,255))
+		wait 1 tick
+
+function settdopacity(e: entity):
+	set {_max} to 255
+	loop 10 times:
+		remove 25 from {_max}
+		set opacity of {_e} to {_max}
+		wait 1 tick
+
+on swap hand items:
+	{actor} is not set
+	settingsGUI(player)
+
+every 3 ticks:
+	{actor} is not set
+	{-holopage} is set
+	if {-banautotick} is set:
+		clear {-banautotick}
+	else:
+		set {_p} to random element out of all players
+		if size of {-keys::*} = 1:
+			if {-keys::*} contains "W":
+				add 1 to {-wkeyvl}
+				if {-wkeyvl} < 6:
+					add 1 to {-holopage}
+					play sound "block.note_block.hat" with pitch 2 to {_p}
+					mainGUIUpdate()
+				else:
+					loop 3 times:
+						add 1 to {-holopage}
+						play sound "block.note_block.hat" with pitch 2 to {_p}
+						mainGUIUpdate()
+						wait 1 tick
+			else:
+				set {-wkeyvl} to 0
+
+			if {-keys::*} contains "S":
+				add 1 to {-skeyvl}
+				if {-skeyvl} < 6:
+					remove 1 from {-holopage}
+					play sound "block.note_block.hat" with pitch 1.5 to {_p}
+					mainGUIUpdate()
+				else:
+					loop 3 times:
+						remove 1 from {-holopage}
+						play sound "block.note_block.hat" with pitch 1.5 to {_p}
+						mainGUIUpdate()
+						wait 1 tick
+			else:
+				set {-skeyvl} to 0
+		else:
+			set {-wkeyvl} to 0
+			set {-skeyvl} to 0
+
+function getNextDiff(i: text) :: text:
+	return switch return {_i}:
+		case "easy" -> "basic"
+		case "basic" -> "hard"
+		case "hard" -> "challenge"
+		case "challenge" -> "inferno"
+		case "inferno" -> "easy"
+		default -> "easy"
+
+function getPreviousDiff(i: text) :: text:
+	return switch return {_i}:
+		case "inferno" -> "challenge"
+		case "challenge" -> "hard"
+		case "hard" -> "basic"
+		case "basic" -> "easy"
+		case "easy" -> "inferno"
+		default -> "inferno"

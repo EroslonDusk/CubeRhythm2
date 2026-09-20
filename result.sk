@@ -1,11 +1,15 @@
-########################################################
+import:
+	org.bukkit.Color
+
+#======================================================#
 #                                                      #
 #                     游戏结算                         #
 #                                                      #
-########################################################
+#======================================================#
 
 function end():
 	clear {actor}'s inventory
+	set {-brandtext} to "&f"
 	if {combo} = {maxNote}:
 		if {statistics::exact} = {maxNote}:
 			perfectPerformance()
@@ -33,29 +37,38 @@ function end():
 			teleport loop-entity to {_loc}
 		wait 1 tick
 	{actor} is set
-	delete all text displays
+	kill all text displays
+	kill all block displays
+	set {_e} to {actor}'s vehicle
+	{_e}.remove()
 	wait 5 ticks
+	teleport {actor} to location(49,0,0,world "world",0,0)
+	wait 5 ticks
+	summon armor stand at {_e}:
+		set gravity of entity to false
+		make entity invisible
+		set {_e} to entity
+	make {actor} ride {_e}
 	if {autoPlay::%uuid of {actor}%} is not "&a开":
 		{actor} is set
 		result()
-		result2()
-		result3()
-		result4()
 	else:
 		quitGame()
 
 function fullCombo():
+	set {-brandtext} to "&bFull Combo!"
 	set {_loc1} to location(0.5, 0.5, 10, world "world", -90, 90)
 	summon text display at {_loc1}:
-		set display interpolation delay of entity to 2
+		set interpolation delay of entity to 2 ticks
 		set display translation of the entity to vector(0,-1.5,0)
-		set display brightness of the entity to displayBrightness(15,15)
-		set display right rotation of the entity to axisAngle(90 * (3.14 / 180), 0, 1, 0)
-		set display text of the entity to "§bFull Combo"
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set right rotation of the entity to axisAngle(90, vector(0, 1, 0))
+		set text of the entity to "§bFull Combo"
 		set display scale of entity to vector(40,40,40)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
 		set metadata value "perfect" of the entity to true
-		set display text opacity of the entity to 255
+		
 		set {_entity} to the entity
 	set {_angle} to 90
 	set {_del} to 22
@@ -70,17 +83,19 @@ function fullCombo():
 		wait 1 tick
 
 function perfectPerformance():
+	set {-brandtext} to "&ePerfect Performance!"
 	set {_loc1} to location(0.5, 0.5, 10, world "world", -90, 90)
 	summon text display at {_loc1}:
-		set display interpolation delay of entity to 2
+		set interpolation delay of entity to 2 ticks
 		set display translation of the entity to vector(0,-1.5,0)
-		set display brightness of the entity to displayBrightness(15,15)
-		set display right rotation of the entity to axisAngle(90 * (3.14 / 180), 0, 1, 0)
-		set display text of the entity to "§ePerfect          ", "    Performance!"
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set right rotation of the entity to axisAngle(90, vector(0, 1, 0))
+		set text of the entity to join "§ePerfect          ", "    Performance!" by new line
 		set display scale of entity to vector(40,40,40)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
 		set metadata value "perfect" of the entity to true
-		set display text opacity of the entity to 255
+		
 		set {_entity} to the entity
 	set {_angle} to 90
 	set {_del} to 22
@@ -94,100 +109,163 @@ function perfectPerformance():
 		set display translation of {_entity} to vector(0,-1.5*({_size}+5)*0.1,0)
 		wait 1 tick
 
+#======================================================#
+#                                                      #
+#                   结算转场动画                       #
+#                                                      #
+#======================================================#
+
 function result():
-	play sound "entity.player.levelup" to all players
 	add {statistics::exactHold} to {score}
-	if {best::%uuid of {actor}%::%{playing}%} is not set:
-		set {best::%uuid of {actor}%::%{playing}%} to {score}
+	wait 10 ticks
+	if {best::%uuid of {actor}%::%{playing}%::%uncolored {level}%} is not set:
+		set {best::%uuid of {actor}%::%{playing}%::%uncolored {level}%} to {score}
 		send title "&e初次游玩!" with subtitle "&e &e" to all players for 1 second with fade in 0.5 seconds and fade out 0.5 seconds
-	else if {score} > {best::%uuid of {actor}%::%{playing}%}:
-		set {best::%uuid of {actor}%::%{playing}%} to {score}
+	else if {score} > {best::%uuid of {actor}%::%{playing}%::%uncolored {level}%}:
+		set {best::%uuid of {actor}%::%{playing}%::%uncolored {level}%} to {score}
 		send title "&e新记录!" with subtitle "&e &e" to all players for 1 second with fade in 0.5 seconds and fade out 0.5 seconds
-	
-	set {_loc1} to location(-3.5, 0.5, 12, world "world", 180, 0)
-	set {_loc2} to location(5.5, 0.5, 12, world "world", 180, 0)
+	play sound "entity.player.levelup" to {actor}
+	set {_loc1} to location(0.5, 40.5, 30, world "world", 180, 0)
+	set {_loc2} to location(0.5, 0.5, 30, world "world", 180, 0)
+	set {_id} to {playing} hashed with MD5
+	set {_bg} to character at codepoint fromBase({-unicode::%{_id}%}, 16)
 	summon text display at {_loc1}:
 		set display translation of the entity to vector(-0.2,-1,0)
-		set display brightness of the entity to displayBrightness(15,15)
-		set display text of the entity to "§e"
-		set display scale of entity to vector(10,10,10)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set metadata value "result" of the entity to true
-		set display text opacity of the entity to 255
-		easingMotion(entity, {_loc1}, {_loc2}, "cirb", "1", "1", "1", "1", 25)
-		set {_entity} to the entity
-	loop 60 times:
-		wait 1 tick
-		set display text of {_entity} to getRank({displayScore})
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "§f%{_bg}%"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set display scale of entity to vector(7,7,7)
+		set teleport duration of entity to 2 ticks
+		
+		easingMotion(entity, {_loc1}, {_loc2}, "1", "cirb", "1", "1", "1", 15)
+	wait 10 ticks
+	set {_loc3} to location(-80.5, 0.5, 0, world "world", 180, 0)
+	set {_loc4} to location(80.5, 0.5, 0, world "world", 180, 0)
+	summon block display at {_loc3}:
+		set display scale of entity to vector(60,100,5)
+		set display translation of the entity to vector(-30,-50,-20)
+		set block data of entity to white_wool
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set teleport duration of entity to 2 ticks
+		set view range of entity to 1.2
+		
+		easingMotion(entity, {_loc3}, {_loc4}, "circ", "1", "1", "1", "1", 20)
+	{_loc3}.add(-5,0,5)
+	{_loc4}.add(0,0,5)
+	summon block display at {_loc3}:
+		set display scale of entity to vector(60,100,5)
+		set display translation of the entity to vector(-30,-50,-20)
+		set block data of entity to orange_wool
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set teleport duration of entity to 2 ticks
+		set view range of entity to 1.2
+		
+		easingMotion(entity, {_loc3}, {_loc4}, "circ", "1", "1", "1", "1", 22)
+	{_loc3}.add(-5,0,5)
+	{_loc4}.add(-5,0,5)
+	summon block display at {_loc3}:
+		set display scale of entity to vector(60,100,5)
+		set display translation of the entity to vector(-35,-50,-20)
+		set block data of entity to light_blue_wool
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set teleport duration of entity to 2 ticks
+		set view range of entity to 1.2
+		
+		easingMotion(entity, {_loc3}, {_loc4}, "circ", "1", "1", "1", "1", 25)
+	wait 15 ticks
+	result2()
+	result3()
 
 function result2():
-	set {_loc1} to location(-7, 2, 10, world "world", 180, 0)
-	set {_loc2} to location(-1.5, 2, 10, world "world", 180, 0)
-	summon text display at {_loc1}:
-		set display translation of the entity to vector(0,-1.5,0)
-		set display brightness of the entity to displayBrightness(15,15)
-		set display text of the entity to "§f"
-		set display scale of entity to vector(8,8,8)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set metadata value "result" of the entity to true
-		set display text opacity of the entity to 255
-		easingMotion(entity, {_loc1}, {_loc2}, "cirb", "1", "1", "1", "1", 30)
-		set {_entity} to the entity
-		set {_tempScore2} to {score}
-		set {_tempScore} to {_tempScore2} * 0.75
-	loop 60 times:
-		set {_tempScore} to 0.75 * {_tempScore}
-		set {displayScore} to round({_tempScore2} - {_tempScore})
-		set {_color} to "§f"
-		if {displayScore} >= 1000000:
-			set display text of {_entity} to "%{_color}%%{displayScore}%"
-		else if {displayScore} >= 100000:
-			set display text of {_entity} to "§80%{_color}%%{displayScore}%"
-		else if {displayScore} >= 10000:
-			set display text of {_entity} to "§800%{_color}%%{displayScore}%"
-		else if {displayScore} >= 1000:
-			set display text of {_entity} to "§8000%{_color}%%{displayScore}%"
-		else if {displayScore} >= 100:
-			set display text of {_entity} to "§80000%{_color}%%{displayScore}%"
-		else if {displayScore} >= 10:
-			set display text of {_entity} to "§800000%{_color}%%{displayScore}%"
-		else:
-			set display text of {_entity} to "§8000000%{_color}%%{displayScore}%"
-		wait 1 tick
+	kill all text displays
+	set {_id} to {playing} hashed with MD5
+	set {_bg} to character at codepoint fromBase({-unicode::%{_id}%}, 16)
+	set {_image} to location(16.5, 0.5, 30, world "world", 180, 0)
+	summon text display at {_image}:
+		set display scale of entity to vector(5,5,5)
+		set display translation of the entity to vector(-0.2,-1,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "§f%{_bg}%"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+	summon text display at {_image}:
+		set display scale of entity to vector(21,21,21)
+		set display translation of the entity to vector(-0.3,-1.5,0.1)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text of the entity to "§8"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+	set {_index} to location(-8.2, 6, 30, world "world", 180, 0)
+	summon text display at {_index}:
+		set display scale of entity to vector(6,6,6)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text alignment of the entity to left aligned
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set text of the entity to "§f                                                   %nl%&f%{song}%&f  %{level}%%nl%&7%{artist}%"
+	set {_judgeinfo} to location(-8.5, -6.2, 30, world "world", 180, 0)
+	summon text display at {_judgeinfo}:
+		set display scale of entity to vector(6,6,6)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text alignment of the entity to left aligned
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set text of the entity to "§f                                                   %nl%&bExact &f%{statistics::exact}%&e(+%{statistics::exacthold}%)%nl%&eJust &f%{statistics::just}%%nl%&cMiss &f%{statistics::miss}%%nl%%{-brandtext}%"
+	set {_tip} to location(-8.5, -8.6, 30, world "world", 180, 0)
+	summon text display at {_tip}:
+		set display scale of entity to vector(6,6,6)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		set text alignment of the entity to left aligned
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set text of the entity to "§f                                                   %nl%&7输入 [/reset] 重置游戏"
 
 function result3():
-	set {_loc1} to location(-5.5, 2, 10, world "world", 180, 0)
-	set {_loc2} to location(0, 2, 10, world "world", 180, 0)
-	summon text display at {_loc1}:
-		set display translation of the entity to vector(0,-4.5,0)
-		set display brightness of the entity to displayBrightness(15,15)
-		set display line width of the entity to 400
-		set display text of the entity to "&bExact &f%{statistics::exact}%&e(+%{statistics::exacthold}%)%nl%&eJust &f%{statistics::just}%%nl%&4Miss &c%{statistics::miss}%", "", "&7输入 [/reset] 重置游戏"
-		set display scale of entity to vector(2,2,2)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set metadata value "result" of the entity to true
-		set display text alignment of the entity to left aligned
-		set display text opacity of the entity to 14
-		easingMotion(entity, {_loc1}, {_loc2}, "cirb", "1", "1", "1", "1", 30)
-		set {_entity} to the entity
-	loop 30 times:
-		add 255/10 to {_alpha}
-		set {_alpha} to 255 if {_alpha} > 255
-		set display text opacity of {_entity} to {_alpha}
+	set {_score} to location(-3, 0.5, 30, world "world", 180, 0)
+	summon text display at {_score}:
+		set display scale of entity to vector(20,20,20)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set text of the entity to "§f"
+		set {_entity} to entity
+	set {_rank} to location(-26.5, 0.5, 30, world "world", 180, 0)
+	summon text display at {_rank}:
+		set display scale of entity to vector(20,20,20)
+		set display translation of the entity to vector(0,0,0)
+		set sky light override of the entity to 15
+		set block light override of the entity to 15
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set text alignment of the entity to left aligned
+		set text of the entity to "§f            %nl%%getRank({score})%"
+		set {_entity2} to entity
+	set {_tempScore2} to {score}
+	set {_tempScore} to {_tempScore2} * 0.75
+	loop 60 times:
+		set {_tempScore} to 0.75 * {_tempScore}
+		set {_displayScore} to round({_tempScore2} - {_tempScore})
+		set {_color} to "§f"
+		if {_displayScore} >= 1000000:
+			set text of {_entity} to "%{_color}%%{_displayScore}%"
+		else if {_displayScore} >= 100000:
+			set text of {_entity} to "§80%{_color}%%{_displayScore}%"
+		else if {_displayScore} >= 10000:
+			set text of {_entity} to "§800%{_color}%%{_displayScore}%"
+		else if {_displayScore} >= 1000:
+			set text of {_entity} to "§8000%{_color}%%{_displayScore}%"
+		else if {_displayScore} >= 100:
+			set text of {_entity} to "§80000%{_color}%%{_displayScore}%"
+		else if {_displayScore} >= 10:
+			set text of {_entity} to "§800000%{_color}%%{_displayScore}%"
+		else:
+			set text of {_entity} to "§8000000%{_color}%%{_displayScore}%"
 		wait 1 tick
-
-function result4():
-	set {_length} to length of "&f%{song}%&f %{level}%" * 0.12
-	set {_loc1} to location(-2.9 - {_length}, 3, 10, world "world", 180, 0)
-	set {_loc2} to location(2.6 - {_length}, 3, 10, world "world", 180, 0)
-	summon text display at {_loc1}:
-		set display brightness of the entity to displayBrightness(15,15)
-		set display line width of the entity to 400
-		set display text of the entity to "&f%{song}%&f %{level}%"
-		set display scale of entity to vector(3,3,3)
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set metadata value "result" of the entity to true
-		set display text opacity of the entity to 255
-		set display text alignment of the entity to left aligned
-		easingMotion(entity, {_loc1}, {_loc2}, "cirb", "1", "1", "1", "1", 30)
-
+	set text of {_entity} to {score}

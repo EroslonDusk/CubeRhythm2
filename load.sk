@@ -1,323 +1,380 @@
-########################################################
+import:
+	org.bukkit.Color
+	org.bukkit.entity.Display
+
+#======================================================#
 #                                                      #
 #                   谱面读取部分                       #
 #                                                      #
-########################################################
+#======================================================#
+
+function registerNote(type: text, time: text, face: text, x: text, y: text, x1: text, y1: text, x2: text, y2: text, turn: text, section: text, glowing: text, tag: text):
+	if {editMode} is not true:
+		set {_index} to size of indices of {-note::%{_time}%::*} + 1
+		set {-note::%{_time}%::%{_index}%::type} to {_type}
+		set {-note::%{_time}%::%{_index}%::face} to {_face}
+		set {-note::%{_time}%::%{_index}%::x} to {_x} parsed as number
+		set {-note::%{_time}%::%{_index}%::y} to {_y} parsed as number
+		set {-note::%{_time}%::%{_index}%::x1} to {_x1} parsed as number
+		set {-note::%{_time}%::%{_index}%::y1} to {_y1} parsed as number
+		set {-note::%{_time}%::%{_index}%::x2} to {_x2} parsed as number
+		set {-note::%{_time}%::%{_index}%::y2} to {_y2} parsed as number
+		set {-note::%{_time}%::%{_index}%::turn} to {_turn}
+		set {-note::%{_time}%::%{_index}%::glowing} to {_glowing}
+	else:
+		set {_uuid} to random uuid
+		if {_type} is not "double":
+			set {_loc} to location({_x} parsed as number + 0.5, {_y} parsed as number + 0.5, 4, world "world", 0, 0)
+			if {_turn} is "right":
+				set {editorSave::type::%{_uuid}%} to "flickR"
+			else if {_turn} is "left":
+				set {editorSave::type::%{_uuid}%} to "flickL"
+			else:
+				set {editorSave::type::%{_uuid}%} to {_type}
+			set {editorSave::loc::%{_uuid}%} to location(0.5, 0.5, 4, world "world", 0, 0) if {editorSave::type::%{_uuid}%} is "flickR" or "flickL" or "execution"
+			set {editorSave::time::%{_uuid}%} to {_time} parsed as number / 1000 if {_time} is set
+			set {editorSave::loc::%{_uuid}%} to {_loc} if {_loc} is set
+			set {editorSave::face::%{_uuid}%} to {_face} if {_face} is set
+			set {editorSave::turn::%{_uuid}%} to {_turn} if {_turn} is set
+			set {editorSave::section::%{_uuid}%} to "暂不支持" if {_section} is set
+			set {editorSave::glowing::%{_uuid}%} to {_glowing} if {_glowing} is set
+			set {editorSave::tag::%{_uuid}%} to {_tag} if {_tag} is set
+		else:
+			set {_loc1} to location({_x1} parsed as number + 0.5, {_y1} parsed as number + 0.5, 4, world "world", 0, 0)
+			set {_loc2} to location({_x2} parsed as number + 0.5, {_y2} parsed as number + 0.5, 4, world "world", 0, 0)
+			set {editorSave::type::%{_uuid}%} to {_type} if {_type} is set
+			set {editorSave::time::%{_uuid}%} to {_time} parsed as number / 1000 if {_time} is set
+			set {editorSave::loc::%{_uuid}%} to {_loc1} if {_loc1} is set
+			set {editorSave::face::%{_uuid}%} to {_face} if {_face} is set
+			set {editorSave::turn::%{_uuid}%} to {_turn} if {_turn} is set
+			set {editorSave::section::%{_uuid}%} to "暂不支持" if {_section} is set
+			set {editorSave::glowing::%{_uuid}%} to {_glowing} if {_glowing} is set
+			set {editorSave::tag::%{_uuid}%} to {_tag} if {_tag} is set
+			set {_uuid2} to random uuid
+			set {editorSave::type::%{_uuid2}%} to {_type} if {_type} is set
+			set {editorSave::time::%{_uuid2}%} to {_time} parsed as number / 1000 if {_time} is set
+			set {editorSave::loc::%{_uuid2}%} to {_loc2} if {_loc2} is set
+			set {editorSave::face::%{_uuid2}%} to {_face} if {_face} is set
+			set {editorSave::turn::%{_uuid2}%} to {_turn} if {_turn} is set
+			set {editorSave::section::%{_uuid2}%} to "暂不支持" if {_section} is set
+			set {editorSave::glowing::%{_uuid2}%} to {_glowing} if {_glowing} is set
+			set {editorSave::tag::%{_uuid2}%} to {_tag} if {_tag} is set
 
 on load:
-	create section with {_id}, {_type}, {_time}, {_face}, {_x}, {_y}, {_x1}, {_y1}, {_x2}, {_y2}, {_turn}, {_section}, {_glowing}, {_tag} stored in {asyncNoteRegister}:
-		if {editMode} is not true:
-			set {loadedNotes::type::%{_id}%} to {_type}
-			set {loadedNotes::time::%{_id}%} to {_time}
-			set {loadedNotes::face::%{_id}%} to {_face}
-			set {loadedNotes::x::%{_id}%} to {_x}
-			set {loadedNotes::y::%{_id}%} to {_y}
-			set {loadedNotes::x1::%{_id}%} to {_x1}
-			set {loadedNotes::y1::%{_id}%} to {_y1}
-			set {loadedNotes::x2::%{_id}%} to {_x2}
-			set {loadedNotes::y2::%{_id}%} to {_y2}
-			set {loadedNotes::turn::%{_id}%} to {_turn}
-			set {loadedNotes::section::%{_id}%} to {_section}
-			set {loadedNotes::glowing::%{_id}%} to {_glowing}
-			set {loadedNotes::tag::%{_id}%} to {_tag}
+	create section with {_id}, {_type}, {_time}, {_face}, {_x}, {_y}, {_x1}, {_y1}, {_x2}, {_y2}, {_turn}, {_section}, {_glowing}, {_tag} stored in {transferChart}:
+		add "%{_time}*1000%" to {_args::*}
+		add {_type} to {_args::*}
+		add {_face} to {_args::*}
+		add "%{_x}%" to {_args::*}
+		add "%{_y}%" to {_args::*}
+		add "%{_x1}%" to {_args::*}
+		add "%{_y1}%" to {_args::*}
+		add "%{_x2}%" to {_args::*}
+		add "%{_y2}%" to {_args::*}
+		add {_turn} to {_args::*}
+		add {_section} to {_args::*}
+		add {_glowing} to {_args::*}
+		add {_tag} to {_args::*}
+		remove all "empty" from {_args::*}
+		remove all "<none>" from {_args::*}
+		set {_output} to join {_args::*} by " "
+		append {_output} to file path "GAME/migrate/basic.chart"
+
+function readchart(name: text, diff: text):
+	file path "GAME/levels/%{_name}%/%{_diff}%.chart" is not missing
+	clear {-note::*}
+	clear {-noteused::*}
+	clear {-beatlinesummoned::*}
+	clear {editorSave::*}
+	set {_get::*} to content of file path "GAME/levels/%{_name}%/%{_diff}%.chart"
+	set {-noteID} to 0
+	set {maxNote} to 0
+	loop {_get::*}:
+		set {_line} to loop-value
+		set {_s::*} to {_line} split at " "
+		if {_s::1} is "level":
+			{editMode} is set
+			set {editor::level} to {_s::2}
+		if {_s::1} is "bpm":
+			{_s::2} parsed as number is set
+			set {bpm} to {_s::2} parsed as number
+		else if {_s::1} is "offset":
+			{_s::2} parsed as number is set
+			set {offset} to {_s::2} parsed as number
+		else if {_s::1} is "author":
+			set {author} to {_s::2}
+		else if {_s::1} parsed as number is set:
+			add 1 to {-noteID}
+			add 1 to {maxNote} if {_s::2} is "tap", "drag" or "flick"
+			add 2 to {maxNote} if {_s::2} is "double"
+			if {_s::2} is "execution":
+				registerNote("%{_s::2}%", "%{_s::1}%", "empty", "empty", "empty", "empty", "empty", "empty", "empty", "empty", "%{_s::3}%", "empty", "empty")
+			if {_s::2} is "tap", "drag" or "hold":
+				registerNote("%{_s::2}%", "%{_s::1}%", "%{_s::3}%", "%{_s::4}%", "%{_s::5}%", "empty", "empty", "empty", "empty", "empty", "empty", "%{_s::6}%", "%{_s::7}%")
+			if {_s::2} is "flick":
+				registerNote("%{_s::2}%", "%{_s::1}%", "%{_s::3}%", "empty", "empty", "empty", "empty", "empty", "empty", "%{_s::4}%", "empty", "%{_s::5}%", "%{_s::6}%")
+			if {_s::2} is "double":
+				registerNote("%{_s::2}%", "%{_s::1}%", "%{_s::3}%", "empty", "empty", "%{_s::4}%", "%{_s::5}%", "%{_s::6}%", "%{_s::7}%", "empty", "empty", "%{_s::8}%", "%{_s::9}%")
+	wait 1 tick
+	set {-readcomplete} to true
+
+#======================================================#
+#                                                      #
+#                   旧版转谱部分                       #
+#                                                      #
+#======================================================#
+
+command /migrate:
+	trigger:
+		send "谱面转换进行中，完成后可在 CubeRhythm2/GAME/migrate 查看转换结果"
+		send "如果输出文件内没有谱面正文，请尝试/sk reload load"
+		delete file path "GAME/migrate/basic.chart"
+		create file path "GAME/migrate/basic.chart"
+		delete file path "GAME/migrate/metadata.txt"
+		create file path "GAME/migrate/metadata.txt"
+		
+		set {_s::*} to {level} split at " "
+		if {_s::2} parsed as number is set:
+			append "level %{_s::2}%" to file path "GAME/migrate/basic.chart"
 		else:
-			set {_uuid} to random uuid
-			if {_type} is not "double":
-				set {_loc} to location({_x} + 0.5, {_y} + 0.5, 4, world "world", 0, 0)
-				if {_turn} is "right":
-					set {editorSave::type::%{_uuid}%} to "flickR"
-				else if {_turn} is "left":
-					set {editorSave::type::%{_uuid}%} to "flickL"
-				else:
-					set {editorSave::type::%{_uuid}%} to {_type}
-				set {editorSave::loc::%{_uuid}%} to location(0.5, 0.5, 4, world "world", 0, 0) if {editorSave::type::%{_uuid}%} is "flickR" or "flickL" or "execution"
-				set {editorSave::time::%{_uuid}%} to {_time} if {_time} is set
-				set {editorSave::loc::%{_uuid}%} to {_loc} if {_loc} is set
-				set {editorSave::face::%{_uuid}%} to {_face} if {_face} is set
-				set {editorSave::turn::%{_uuid}%} to {_turn} if {_turn} is set
-				set {editorSave::section::%{_uuid}%} to "暂不支持" if {_section} is set
-				set {editorSave::glowing::%{_uuid}%} to {_glowing} if {_glowing} is set
-				set {editorSave::tag::%{_uuid}%} to {_tag} if {_tag} is set
-			else:
-				set {_loc1} to location({_x1} + 0.5, {_y1} + 0.5, 4, world "world", 0, 0)
-				set {_loc2} to location({_x2} + 0.5, {_y2} + 0.5, 4, world "world", 0, 0)
-				set {editorSave::type::%{_uuid}%} to {_type} if {_type} is set
-				set {editorSave::time::%{_uuid}%} to {_time} if {_time} is set
-				set {editorSave::loc::%{_uuid}%} to {_loc1} if {_loc1} is set
-				set {editorSave::face::%{_uuid}%} to {_face} if {_face} is set
-				set {editorSave::turn::%{_uuid}%} to {_turn} if {_turn} is set
-				set {editorSave::section::%{_uuid}%} to "暂不支持" if {_section} is set
-				set {editorSave::glowing::%{_uuid}%} to {_glowing} if {_glowing} is set
-				set {editorSave::tag::%{_uuid}%} to {_tag} if {_tag} is set
-				set {_uuid2} to random uuid
-				set {editorSave::type::%{_uuid2}%} to {_type} if {_type} is set
-				set {editorSave::time::%{_uuid2}%} to {_time} if {_time} is set
-				set {editorSave::loc::%{_uuid2}%} to {_loc2} if {_loc2} is set
-				set {editorSave::face::%{_uuid2}%} to {_face} if {_face} is set
-				set {editorSave::turn::%{_uuid2}%} to {_turn} if {_turn} is set
-				set {editorSave::section::%{_uuid2}%} to "暂不支持" if {_section} is set
-				set {editorSave::glowing::%{_uuid2}%} to {_glowing} if {_glowing} is set
-				set {editorSave::tag::%{_uuid2}%} to {_tag} if {_tag} is set
-				
-			
+			append "level 0" to file path "GAME/migrate/basic.chart"
+		if {author} is set:
+			append "author %{author}%" to file path "GAME/migrate/basic.chart"
+		else:
+			append "author 未知" to file path "GAME/migrate/basic.chart"
+		if {bpm} is set:
+			append "bpm %{bpm}%" to file path "GAME/migrate/basic.chart"
+		else:
+			append "bpm 120" to file path "GAME/migrate/basic.chart"
+		if {offset} is set:
+			append "offset %{offset}%" to file path "GAME/migrate/basic.chart"
+		else:
+			append "offset 0" to file path "GAME/migrate/basic.chart"
+		
+		append "曲名=%{song}%" to file path "GAME/migrate/metadata.txt"
+		append "曲师=%{artist}%" to file path "GAME/migrate/metadata.txt"
+		append "音乐=music.wav" to file path "GAME/migrate/metadata.txt"
+		append "封面=bg.jpg" to file path "GAME/migrate/metadata.txt"
+		
+		loadChart()
+		send "谱面转换完成"
+
+function registerChart(id: text, name: text, level: text, artist: text, author: text, length: number, offset: number):
+	set {offset} to {_offset}
+
+function setBPM(id: text, bpm: number):
+	set {bpm} to {_bpm}
 
 function execution(time: number, section: section):
-	add 1 to {noteID}
 	set {_type} to "execution"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, "empty", "empty", "empty", "empty", "empty", "empty", "empty", "empty", {_section}, "empty", "empty"
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, "empty", "empty", "empty", "empty", "empty", "empty", "empty", "empty", {_section}, "empty", "empty"
 
 function tap(time: number, face: text, x: number, y: number, glowing: boolean, tag: text):
-	add 1 to {maxNote}
-	add 1 to {noteID}
 	set {_type} to "tap"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
 
 function drag(time: number, face: text, x: number, y: number, glowing: boolean, tag: text):
-	add 1 to {maxNote}
-	add 1 to {noteID}
 	set {_type} to "drag"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
 
 function hold(time: number, face: text, x: number, y: number, glowing: boolean, tag: text):
-	add 1 to {noteID}
 	set {_type} to "hold"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, {_face}, {_x}, {_y}, "empty", "empty", "empty", "empty", "empty", "empty", {_glowing}, {_tag}
 
 function flick(time: number, face: text, turn: text, glowing: boolean, tag: text):
-	add 1 to {maxNote}
-	add 1 to {noteID}
 	set {_type} to "flick"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, {_face}, "empty", "empty", "empty", "empty", "empty", "empty", {_turn}, "empty", {_glowing}, {_tag}
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, {_face}, "empty", "empty", "empty", "empty", "empty", "empty", {_turn}, "empty", {_glowing}, {_tag}
 
 function double(time: number, face: text, x1: number, y1: number, x2: number, y2: number, glowing: boolean, tag: text):
-	add 2 to {maxNote}
-	add 1 to {noteID}
 	set {_type} to "double"
-	run section {asyncNoteRegister} async with {noteID}, {_type}, {_time}, {_face}, "empty", "empty", {_x1}, {_y1}, {_x2}, {_y2}, "empty", "empty", {_glowing}, {_tag}
+	run section {transferChart} sync with {noteID}, {_type}, {_time}, {_face}, "empty", "empty", {_x1}, {_y1}, {_x2}, {_y2}, "empty", "empty", {_glowing}, {_tag}
 
-function drawTap(face: text, x: number, y: number, z: number, glowing: boolean, tag: text):
-	set {_x1} to {_x}+0.5
-	set {_y1} to {_y}-0.5
-	set {_z1} to {_z}+0.5
+#======================================================#
+#                                                      #
+#                   绘制音符部分                       #
+#                                                      #
+#======================================================#
+
+function delayTranslation(entity: fake entity, v: vector):
+	wait 2 ticks
+	set {_v0} to fake meta display translation of {_entity}
+	add {_v} to {_v0}
+	set fake meta display translation of {_entity} to {_v0}
+	
+function delayKill2(entity: entity, ticks: number):
+	set {_t} to "%{_ticks}% ticks" parsed as timespan
+	wait {_t}:
+		kill {_entity}
+
+function delayKill(entity: fake entity, ticks: number):
+	set {_t} to "%{_ticks}% ticks" parsed as timespan
+	wait {_t}:
+		kill fake entity {_entity}
+
+function drawTap(face: text, x: number, y: number, z: number, glowing: boolean) :: fake entity:
 	if {_face} is "w":
 		set {_loc1} to location({_x}, {_y}, {_z}, world "world", 0, 0)
-		set {_loc2} to location({_x1}, {_y1}, {_z1}, world "world", 0, 0)
 	if {_face} is "a":
-		remove 1 from {_x1}
 		set {_loc1} to location({_z}, {_y}, -1*{_x}, world "world", 90, 0)
-		set {_loc2} to location({_z1}, {_y1}, -1*{_x1}, world "world", 90, 0)
 	if {_face} is "s":
-		remove 1 from {_x1}
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_x}+1, {_y}, -1*{_z}+1, world "world", 180, 0)
-		set {_loc2} to location(-1*{_x1}, {_y1}, -1*{_z1}, world "world", 180, 0)
 	if {_face} is "d":
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_z}+1, {_y}, {_x}+1, world "world", 270, 0)
-		set {_loc2} to location(-1*{_z1}, {_y1}, {_x1}, world "world", 270, 0)
-	summon block display at {_loc1}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to light_blue_concrete
-		set display scale of entity to vector(1,1,0.5*{speed::%uuid of {actor}%})
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-			set display glow color override of entity to bukkitColor(0,50,255,255)
-		set {_e} to entity
-	
-	summon interaction at {_loc2}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "tap"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
-	
-	wait 2 ticks
-	set display brightness of {_e} to displayBrightness(15,15)
-	set display translation of {_e} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
 
-function drawHold(face: text, x: number, y: number, z: number, glowing: boolean, tag: text):
-	set {_x1} to {_x}+0.5
-	set {_y1} to {_y}-0.5+20
-	set {_z1} to {_z}+1
+	set {_tv} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
+	set {_tv} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
+	set {_meta} to block display meta data:
+		display block data: light_blue_concrete
+		display scale: vector(1,1,0.5*{speed::%uuid of {actor}%})
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_entity} to a new fake block display entity:
+		viewers: all players
+		location: {_loc1}
+		meta: {_meta}
+	spawn fake entity {_entity} at {_loc1}
+	
+	delayTranslation({_entity}, {_tv})
+	createAnchor("tap", {_face}, {_loc1})
+	
+	return {_entity}
+
+function drawHold(face: text, x: number, y: number, z: number, glowing: boolean) :: fake entity:
 	if {_face} is "w":
 		set {_loc1} to location({_x}, {_y}, {_z}+0.1, world "world", 0, 0)
-		set {_loc2} to location({_x1}, {_y1}, {_z1}, world "world", 0, 0)
 	if {_face} is "a":
-		remove 1 from {_x1}
 		set {_loc1} to location({_z}+0.1, {_y}, -1*{_x}+1, world "world", -90, 0)
-		set {_loc2} to location({_z1}, {_y1}, -1*{_x1}, world "world", -90, 0)
 	if {_face} is "s":
-		remove 1 from {_x1}
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_x}+1, {_y}, -1*{_z}+0.9, world "world", 180, 0)
-		set {_loc2} to location(-1*{_x1}, {_y1}, -1*{_z1}, world "world", 180, 0)
 	if {_face} is "d":
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_z}+0.9, {_y}, {_x}, world "world", 90, 0)
-		set {_loc2} to location(-1*{_z1}, {_y1}, {_x1}, world "world", 90, 0)
-	summon block display at {_loc1}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to white_concrete
-		set display scale of entity to vector(1,1,3*{speed::%uuid of {actor}%})
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-			set display glow color override of entity to bukkitColor(255,255,255,255)
-		set {_e} to entity
-	
-	summon interaction at {_loc2}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "hold"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
-	
-	wait 2 ticks
-	set display brightness of {_e} to displayBrightness(15,15)
-	set display translation of {_e} to vector(0,0,-100*{speed::%uuid of {actor}%})
 
-function drawDrag(face: text, x: number, y: number, z: number, glowing: boolean, tag: text):
-	set {_x1} to {_x}+0.5
-	set {_y1} to {_y}-0.5
-	set {_z1} to {_z}+1
+	set {_tv} to vector(0,0,-100*{speed::%uuid of {actor}%})
+	set {_bpm} to {bpm}
+	set {_bpm} to 150 if {_bpm} is not a number
+	set {_meta} to block display meta data:
+		display block data: white_concrete
+		display scale: vector(1,1,300/{_bpm}*{speed::%uuid of {actor}%}+1) #每1/4拍是多少ticks？ 60/120bpm=0.5s*20=10ticks/4=2.5ticks
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_entity} to a new fake block display entity:
+		viewers: all players
+		location: {_loc1}
+		meta: {_meta}
+	spawn fake entity {_entity} at {_loc1}
+	
+	delayTranslation({_entity}, {_tv})
+	
+	return {_entity}
+
+function drawDrag(face: text, x: number, y: number, z: number, glowing: boolean) :: fake entity:
 	if {_face} is "w":
 		set {_loc1} to location({_x}, {_y}, {_z}, world "world", 0, 0)
-		set {_loc2} to location({_x1}, {_y1}, {_z1}, world "world", 0, 0)
 	if {_face} is "a":
-		remove 1 from {_x1}
 		set {_loc1} to location({_z}, {_y}, -1*{_x}, world "world", 90, 0)
-		set {_loc2} to location({_z1}, {_y1}, -1*{_x1}, world "world", 90, 0)
 	if {_face} is "s":
-		remove 1 from {_x1}
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_x}+1, {_y}, -1*{_z}+1, world "world", 180, 0)
-		set {_loc2} to location(-1*{_x1}, {_y1}, -1*{_z1}, world "world", 180, 0)
 	if {_face} is "d":
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_z}+1, {_y}, {_x}+1, world "world", 270, 0)
-		set {_loc2} to location(-1*{_z1}, {_y1}, {_x1}, world "world", 270, 0)
-	summon block display at {_loc1}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to yellow_concrete
-		set display scale of entity to vector(1,1,0.5*{speed::%uuid of {actor}%})
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-			set display glow color override of entity to bukkitColor(255,255,235,42)
-		set {_e} to entity
-	
-	summon interaction at {_loc2}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "drag"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
-	
-	wait 2 ticks
-	set display brightness of {_e} to displayBrightness(15,15)
-	set display translation of {_e} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
 
-function drawFlick(face: text, z: number, turn: text, glowing: boolean, tag: text):
+	set {_tv} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
+	set {_tv} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
+	set {_meta} to block display meta data:
+		display block data: yellow_concrete
+		display scale: vector(1,1,0.5*{speed::%uuid of {actor}%})
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_entity} to a new fake block display entity:
+		viewers: all players
+		location: {_loc1}
+		meta: {_meta}
+	spawn fake entity {_entity} at {_loc1}
+	
+	delayTranslation({_entity}, {_tv})
+	createAnchor("drag", {_face}, {_loc1})
+	
+	return {_entity}
+
+function drawFlick(face: text, z: number, turn: text, glowing: boolean) :: objects:
 	set {_x} to 0
 	set {_y} to 0
 	set {_z} to {_z}-0.5
-	set {_x1} to {_x}+0.5
-	set {_y1} to 20
 	set {_x2} to -2
 	set {_y2} to -2
-	set {_z1} to {_z}+1
 	if {_face} is "w":
 		set {_loc1} to location({_x2}, {_y2}, {_z}, world "world", 0, 0)
-		set {_loc2} to location({_x1}, {_y1}, {_z1}, world "world", 0, 0)
 		set {_loc3} to location({_x}+0.75, {_y}-2.75, {_z}+0.4, world "world", 180, 0)
 	if {_face} is "a":
-		remove 1 from {_x1}
 		set {_loc1} to location({_z}+1, {_y2}, -1*{_x2}-4, world "world", 90, 0)
-		set {_loc2} to location({_z1}, {_y1}, -1*{_x1}, world "world", 90, 0)
 		set {_loc3} to location({_z}+0.4, {_y}-2.75, -1*{_x}+0.25, world "world", 90, 0)
 	if {_face} is "s":
-		remove 1 from {_x1}
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_x2}+1, {_y2}, -1*{_z}+1, world "world", 180, 0)
-		set {_loc2} to location(-1*{_x1}, {_y1}, -1*{_z1}, world "world", 180, 0)
 		set {_loc3} to location(-1*{_x}+0.25, {_y}-2.75, -1*{_z}+0.6, world "world", 0, 0)
 	if {_face} is "d":
-		remove 1 from {_z1}
 		set {_loc1} to location(-1*{_z}, {_y2}, {_x2}+5, world "world", 270, 0)
-		set {_loc2} to location(-1*{_z1}, {_y1}, {_x1}, world "world", 270, 0)
 		set {_loc3} to location(-1*{_z}+0.6, {_y}-2.75, {_x}+0.75, world "world", 270, 0)   
-	summon block display at {_loc1}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to white_stained_glass_pane[east=true,north=false,south=false,waterlogged=false,west=true]
-		set display scale of entity to vector(5,5,1)
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-		set {_e1} to entity
+
+	set {_meta} to block display meta data:
+		display block data: white_stained_glass_pane[east=true,north=false,south=false,waterlogged=false,west=true]
+		display scale: vector(5,5,1)
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_e1} to a new fake block display entity:
+		viewers: all players
+		location: {_loc1}
+		meta: {_meta}
+	set {_entity::1} to {_e1}
+	spawn fake entity {_e1} at {_loc1}
 	
 	if {_turn} is "left":
-		summon text display at {_loc3}:
-			set display interpolation start of entity to 0
-			set display interpolation duration of entity to 100
-			set display text of the entity to "§f←"
-			set display scale of entity to vector(20,20,0)
-			set display text background color of the entity to bukkitColor(0,0,0,0)
-			set metadata value "linkbind" of entity to {_uuid}
-			set {_e2} to entity
+		set {_meta} to text display meta data:
+			display text: "§f←"
+			display scale: vector(20,20,0)
+			display translation: vector(0,0.75,0)
+			display billboard: fixed
+			display background color: rgb(0,0,0,0)
+			display interpolation delay: 0 ticks
+			display transform interpolation duration: 100 ticks
+		set {_e2} to a new fake text display entity:
+			viewers: all players
+			location: {_loc3}
+			meta: {_meta}
+		set {_entity::2} to {_e2}
+		spawn fake entity {_e2} at {_loc3}
 	
 	if {_turn} is "right":
-		summon text display at {_loc3}:
-			set display interpolation start of entity to 0
-			set display interpolation duration of entity to 100
-			set display text of the entity to "§f→"
-			set display scale of entity to vector(20,20,0)
-			set display text background color of the entity to bukkitColor(0,0,0,0)
-			set metadata value "linkbind" of entity to {_uuid}
-			set {_e3} to entity
+		set {_meta} to text display meta data:
+			display text: "§f→"
+			display scale: vector(20,20,0)
+			display translation: vector(0,0.75,0)
+			display billboard: fixed
+			display background color: rgb(0,0,0,0)
+			display interpolation delay: 0 ticks
+			display transform interpolation duration: 100 ticks
+		set {_e3} to a new fake text display entity:
+			viewers: all players
+			location: {_loc3}
+			meta: {_meta}
+		set {_entity::2} to {_e3}
+		spawn fake entity {_e3} at {_loc3}
 	
-	summon interaction at {_loc2}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "flick"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "turn" of entity to "%{_turn}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
+	if {_e1} is set:
+		delayTranslation({_e1}, vector(0,0,-100*{speed::%uuid of {actor}%})) if {_face} is "w" or "s"
+		delayTranslation({_e1}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "a" or "d"
+	if {_e2} is set:
+		delayTranslation({_e2}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "w" or "s"
+		delayTranslation({_e2}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "a" or "d"
+	if {_e3} is set:
+		delayTranslation({_e3}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "w" or "s"
+		delayTranslation({_e3}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "a" or "d"
 	
-	wait 2 ticks
-	set display brightness of {_e1} to displayBrightness(15,15)
-	set display brightness of {_e2} to displayBrightness(15,15)
-	set display brightness of {_e3} to displayBrightness(15,15)
-	set display translation of {_e1} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e2} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e3} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e1} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
-	set display translation of {_e2} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
-	set display translation of {_e3} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
+	return {_entity::*}
 
-function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, yb: number, zb: number, glowing: boolean, tag: text):
+function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, yb: number, zb: number, glowing: boolean) :: objects:
 	if {_xa} < {_xb}:
 		set {_t1} to {_xa}
 		set {_t2} to {_ya}
@@ -328,6 +385,8 @@ function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, 
 		set {_xb} to {_t1}
 		set {_yb} to {_t2}
 		set {_zb} to {_t3}
+	
+	#第一个键
 	set {_xa1} to {_xa}+0.5
 	set {_ya1} to {_ya}-0.5
 	set {_za1} to {_za}+1
@@ -347,30 +406,21 @@ function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, 
 		remove 1 from {_za1}
 		set {_loc1} to location(-1*{_za}+1, {_ya}, {_xa}+1, world "world", 270, 0)
 		set {_loc2} to location(-1*{_za1}, {_ya1}, {_xa1}, world "world", 270, 0)
-	summon block display at {_loc1}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to orange_concrete
-		set display scale of entity to vector(1,1,0.5*{speed::%uuid of {actor}%})
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-			set display glow color override of entity to bukkitColor(255,255,180,0)
-		set {_e1} to entity
+
+	set {_meta} to block display meta data:
+		display block data: orange_concrete
+		display scale: vector(1,1,0.5*{speed::%uuid of {actor}%})
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_fake1} to a new fake block display entity:
+		viewers: all players
+		location: {_loc1}
+		meta: {_meta}
+	set {_entity::1} to {_fake1}
+	spawn fake entity {_fake1} at {_loc1}
 	
-	summon interaction at {_loc2}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "double"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		set {_entity1} to entity
-		set {_uuid1} to uuid of entity
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
-	
+	#第二个键
 	set {_xb1} to {_xb}+0.5
 	set {_yb1} to {_yb}-0.5
 	set {_zb1} to {_zb}+1
@@ -390,32 +440,21 @@ function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, 
 		remove 1 from {_zb1}
 		set {_loc3} to location(-1*{_zb}+1, {_yb}, {_xb}+1, world "world", 270, 0)
 		set {_loc4} to location(-1*{_zb1}, {_yb1}, {_xb1}, world "world", 270, 0)
-	summon block display at {_loc3}:
-		set display interpolation start of entity to 0
-		set display interpolation duration of entity to 100
-		set display block data of entity to orange_concrete
-		set display scale of entity to vector(1,1,0.5*{speed::%uuid of {actor}%})
-		set metadata value "tag" of entity to {_tag}
-		set {_uuid} to uuid of entity
-		if {_glowing} is true:
-			set glowing of entity to true
-			set display glow color override of entity to bukkitColor(255,255,180,0)
-		set {_e2} to entity
+
+	set {_meta} to block display meta data:
+		display block data: orange_concrete
+		display scale: vector(1,1,0.5*{speed::%uuid of {actor}%})
+		display billboard: fixed
+		display interpolation delay: 0 ticks
+		display transform interpolation duration: 100 ticks
+	set {_fake2} to a new fake block display entity:
+		viewers: all players
+		location: {_loc3}
+		meta: {_meta}
+	set {_entity::2} to {_fake2}
+	spawn fake entity {_fake2} at {_loc3}
 	
-	summon interaction at {_loc4}:
-		set interaction height of entity to 2
-		set interaction width of entity to 2
-		set metadata value "notetype" of entity to "double"
-		set metadata value "face" of entity to "%{_face}%"
-		set metadata value "linkuuid" of entity to "%{_uuid}%" #击中音符时通过uuid将对应的block display销毁
-		set metadata value "tag" of entity to {_tag}
-		set {_entity2} to entity
-		set {_uuid2} to uuid of entity
-		if {_glowing} is true:
-			set metadata value "glowing" of entity to true
-	
-	set metadata value "linknote" of {_entity1} to "%{_uuid2}%"
-	set metadata value "linknote" of {_entity2} to "%{_uuid1}%" #击中1时消除2，击中2时消除1
+	#连接线
 	set {_d1} to distance between {_loc1} and {_loc3}
 	set {_d3} to distance between {_loc1} and {_loc3}
 	set {_d2} to abs({_xa} - {_xb})
@@ -427,59 +466,66 @@ function drawDouble(face: text, xa: number, ya: number, za: number, xb: number, 
 		{_loc2}.add(0, 1, 0.8) if {_face} is "s"
 		{_loc2}.add(-0.8, 1, 0) if {_face} is "a"
 		{_loc2}.add(0.8, 1, 0) if {_face} is "d"
-		summon block display at {_loc2}:
-			set display interpolation start of entity to 0
-			set display interpolation duration of entity to 100
-			set display block data of entity to white_concrete
-			set display scale of entity to vector(0.1,{_d3},0.1)
-			set metadata value "note1" of entity to {_uuid2}
-			set metadata value "note2" of entity to {_uuid1}
-			set metadata value "face" of entity to {_face}
-			set metadata value "tag" of entity to {_tag}
-			set pitch of entity to {_acos}
-			set yaw of entity to -90 if {_face} is "w"
-			set yaw of entity to -180 if {_face} is "a"
-			set yaw of entity to 90 if {_face} is "s"
-			set yaw of entity to 0 if {_face} is "d"
-			if {_glowing} is true:
-				set glowing of entity to true
-				set display glow color override of entity to bukkitColor(255,255,255,255)
-			set {_e3} to entity
+
+		set {_loc5} to {_loc2}
+		set pitch of {_loc5} to {_acos}
+		set yaw of {_loc5} to -90 if {_face} is "w"
+		set yaw of {_loc5} to -180 if {_face} is "a"
+		set yaw of {_loc5} to 90 if {_face} is "s"
+		set yaw of {_loc5} to 0 if {_face} is "d"
+		
+		set {_meta} to block display meta data:
+			display block data: white_concrete
+			display scale: vector(0.1,{_d3},0.1)
+			display billboard: fixed
+			display interpolation delay: 0 ticks
+			display transform interpolation duration: 100 ticks
+		set {_fake3} to a new fake block display entity:
+			viewers: all players
+			location: {_loc5}
+			meta: {_meta}
+		set {_entity::3} to {_fake3}
+		spawn fake entity {_fake3} at {_loc5}
 	
 	else:
 		{_loc4}.add(0, 1, -0.9) if {_face} is "w"
 		{_loc4}.add(0, 1, 0.9) if {_face} is "s"
 		{_loc4}.add(-0.9, 1, 0) if {_face} is "a"
 		{_loc4}.add(0.9, 1, 0) if {_face} is "d"
-		summon block display at {_loc4}:
-			set display interpolation start of entity to 0
-			set display interpolation duration of entity to 100
-			set display block data of entity to white_concrete
-			set display scale of entity to vector(0.1,{_d3},0.1)
-			set metadata value "note1" of entity to {_uuid2}
-			set metadata value "note2" of entity to {_uuid1}
-			set metadata value "face" of entity to {_face}
-			set metadata value "tag" of entity to {_tag}
-			set pitch of entity to {_acos}
-			set yaw of entity to 90 if {_face} is "w"
-			set yaw of entity to 0 if {_face} is "a"
-			set yaw of entity to -90 if {_face} is "s"
-			set yaw of entity to -180 if {_face} is "d"
-			if {_glowing} is true:
-				set glowing of entity to true
-				set display glow color override of entity to bukkitColor(255,255,255,255)
-			set {_e4} to entity
+
+		set {_loc6} to {_loc4}
+		set pitch of {_loc6} to {_acos}
+		set yaw of {_loc6} to 90 if {_face} is "w"
+		set yaw of {_loc6} to 0 if {_face} is "a"
+		set yaw of {_loc6} to -90 if {_face} is "s"
+		set yaw of {_loc6} to -180 if {_face} is "d"
+		
+		set {_meta} to block display meta data:
+			display block data: white_concrete
+			display scale: vector(0.1,{_d3},0.1)
+			display billboard: fixed
+			display interpolation delay: 0 ticks
+			display transform interpolation duration: 100 ticks
+		set {_fake4} to a new fake block display entity:
+			viewers: all players
+			location: {_loc6}
+			meta: {_meta}
+		set {_entity::3} to {_fake4}
+		spawn fake entity {_fake4} at {_loc6}
 	
-	wait 2 ticks
-	set display brightness of {_e1} to displayBrightness(15,15)
-	set display brightness of {_e2} to displayBrightness(15,15)
-	set display brightness of {_e3} to displayBrightness(15,15)
-	set display brightness of {_e4} to displayBrightness(15,15)
-	set display translation of {_e1} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e2} to vector(0,0,-100*{speed::%uuid of {actor}%}) if {_face} is "w" or "s"
-	set display translation of {_e3} to vector(100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "w" or "s"
-	set display translation of {_e4} to vector(-100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "w" or "s"
-	set display translation of {_e1} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
-	set display translation of {_e2} to vector(0,0,100*{speed::%uuid of {actor}%}) if {_face} is "a" or "d"
-	set display translation of {_e3} to vector(100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "a" or "d"
-	set display translation of {_e4} to vector(-100*{speed::%uuid of {actor}%}, 0, 0) if {_face} is "a" or "d"
+	createAnchor("double", {_face}, {_loc1})
+	createAnchor("double", {_face}, {_loc3})
+	if {_fake1} is set:
+		delayTranslation({_fake1}, vector(0,0,-100*{speed::%uuid of {actor}%})) if {_face} is "w" or "s"
+		delayTranslation({_fake1}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "a" or "d"
+	if {_fake2} is set:
+		delayTranslation({_fake2}, vector(0,0,-100*{speed::%uuid of {actor}%})) if {_face} is "w" or "s"
+		delayTranslation({_fake2}, vector(0,0,100*{speed::%uuid of {actor}%})) if {_face} is "a" or "d"
+	if {_fake3} is set:
+		delayTranslation({_fake3}, vector(100*{speed::%uuid of {actor}%}, 0, 0)) if {_face} is "w" or "s"
+		delayTranslation({_fake3}, vector(100*{speed::%uuid of {actor}%}, 0, 0)) if {_face} is "a" or "d"
+	if {_fake4} is set:
+		delayTranslation({_fake4}, vector(-100*{speed::%uuid of {actor}%}, 0, 0)) if {_face} is "w" or "s"
+		delayTranslation({_fake4}, vector(-100*{speed::%uuid of {actor}%}, 0, 0)) if {_face} is "a" or "d"
+	
+	return {_entity::*}

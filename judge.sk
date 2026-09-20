@@ -1,29 +1,33 @@
-########################################################
+import:
+	org.bukkit.Color
+
+#======================================================#
 #                                                      #
 #                     判定部分                         #
 #                                                      #
-########################################################
+#======================================================#
 
-every ticks:
+every ticks: #drag判定
+	{editMode} is not set
+	{actor} is set
 	{autoPlay::%uuid of {actor}%} is not "&a开"
-	loop all players:
-		{actor} is loop-player
-		set {_entity} to target of loop-player ignoring blocks
-		{_entity} is interaction
-		set {_target} to location of {_entity}
-		if metadata value "notetype" of {_entity} is "drag":
-			set {_x} to z location of {_target} if metadata value "face" of {_entity} is "w" or "s"
-			set {_x} to x location of {_target} if metadata value "face" of {_entity} is "a" or "d"
-			set {_time} to ({_x} - 4) / {speed::%uuid of {actor}%} * 50 if metadata value "face" of {_entity} is "w" or "a"
-			set {_time} to (-1 * {_x} - 4) / {speed::%uuid of {actor}%} * 50 if metadata value "face" of {_entity} is "s" or "d"
-			if abs({_time}) <= 200:
-				{_target}.add(0, 20, 0)
-				teleport {_entity} to {_target}
-				set metadata value "hited" of {_entity} to true
-		exit loop
+	loop 2 times:
+		set {_get::*} to getNearestDrag(getCursorPos({actor}), {actor})
+		set {_index} to {_get::1}
+		{_index} is set
+		set {-onstage::%{_index}%::hited} to true
 
-function exact(entity: entity, time: number):
-	if metadata value "notetype" of {_entity} is not "hold":
+function exact(index: text, time: number):
+	set {_face} to {-onstage::%{_index}%::face}
+	set {_type} to {-onstage::%{_index}%::type}
+	set {_x} to {-onstage::%{_index}%::x}
+	set {_y} to {-onstage::%{_index}%::y}
+	set {_loc} to location({_x}+0.5, {_y}+0.55, 5, world "world", 180, 0) if {_face} is "w"
+	set {_loc} to location(5, {_y}+0.55, -1*{_x}+0.5, world "world", 90, 0) if {_face} is "a"
+	set {_loc} to location(-1*{_x}+0.55, {_y}+0.5, -4, world "world", 0, 0) if {_face} is "s"
+	set {_loc} to location(-4, {_y}+0.55, {_x}+0.5, world "world", -90, 0) if {_face} is "d"
+
+	if {_type} is not "hold":
 		add 1 to {combo}
 		play sound "entity.player.hurt" with pitch 2 to all players if {hitSound::%uuid of {actor}%} is "&a开"
 		add 1 to {hitNotes}
@@ -32,63 +36,39 @@ function exact(entity: entity, time: number):
 		add 1 to {statistics::exactHold}
 	set {alphaTime} to 11
 	set {score} to floor(1000000/{maxNote}*{hitNotes})
-	set {_face} to metadata value "face" of {_entity}
-	set {_loc} to location of {_entity}
-	set {_z} to z location of {_loc}
-	set {_x} to x location of {_loc}
-	set yaw of {_loc} to 180 if {_face} is "w"
-	set yaw of {_loc} to 90 if {_face} is "a"
-	set yaw of {_loc} to 0 if {_face} is "s"
-	set yaw of {_loc} to -90 if {_face} is "d"
-	{_loc}.add(0, 0, {_z}*-1+5) if {_face} is "w"
-	{_loc}.add({_x}*-1+5, 0, 0) if {_face} is "a"
-	{_loc}.add(0, 0, {_z}*-1-4) if {_face} is "s"
-	{_loc}.add({_x}*-1-4, 0, 0) if {_face} is "d"
-	{_loc}.add(0, 1, 0)
-	if metadata value "notetype" of {_entity} is "drag" or "hold" or "flick":
-		if {autoPlay::%uuid of {actor}%} is not "&a开":
-			{_loc}.add(0, -20, 0)
-		else if metadata value "notetype" of {_entity} is "drag":
-			{_loc}.add(0, 0, 0)
-		else if metadata value "notetype" of {_entity} is "hold":
-			{_loc}.add(0, -20, 0)
-		else:
-			{_loc}.add(0, -20.5, 0)
-	else:
-		{_loc}.add(0, 0, 0)
 	summon text display at {_loc}:
 		set {_alpha} to 255
-		set display text of the entity to "&bExact" if {showOffset::%uuid of {actor}%} is not "&a开"
+		set text of the entity to "&bExact" if {showOffset::%uuid of {actor}%} is not "&a开"
 		if {showOffset::%uuid of {actor}%} is "&a开":
-			set display text of the entity to "&b+%round({_time})%" if {_time} > 0
-			set display text of the entity to "&b%round({_time})%" if {_time} < 0
-			set display text of the entity to "&b" if {_time} = 0
-		set display text background color of the entity to bukkitColor(0,0,0,0)
+			set text of the entity to "&b+%round({_time})%" if {_time} > 0
+			set text of the entity to "&b%round({_time})%" if {_time} < 0
+			set text of the entity to "&b" if {_time} = 0
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
 		set {_scale} to 3
 		set display scale of the entity to vector({_scale},{_scale},{_scale})
-		set display translation of the entity to vector({_scale}*-0.015,{_scale}*-0.15,0)
+		set display translation of the entity to vector({_scale}*-0.015,{_scale}*-0.1,0)
 		set metadata value "belongsto" of the entity to uuid of {_ent1}
-		set display shadow strength of the entity to 0
+		set shadow strength of the entity to 0
 		set {_text} to the entity
 	summon text display at {_loc}:
 		set {_alpha} to 255
-		set display text of the entity to "&b█"
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set display text opacity of the entity to 14
+		set text of the entity to "&b█"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set opacity of the entity to 14
 		set {_scale2} to 8
 		set {_scale2toDelete} to 3
 		set display scale of the entity to vector(2,2,2)
-		set display translation of the entity to vector({_scale2}*-0.015,{_scale2}*-0.15,0)
+		set display translation of the entity to vector({_scale2}*-0.015,{_scale2}*-0.15+0.1,0)
 		set metadata value "belongsto" of the entity to uuid of {_ent1}
-		set display shadow strength of the entity to 0
+		set shadow strength of the entity to 0
 		set {_text2} to the entity
 	loop 10 times:
 		remove 24 from {_alpha}
-		set display text opacity of {_text} to {_alpha}
+		set opacity of {_text} to {_alpha}
 		if {_alpha} > 40:
-			set display text opacity of {_text2} to {_alpha} / 4
+			set opacity of {_text2} to {_alpha} / 4
 		else:
-			set display text opacity of {_text2} to 14
+			set opacity of {_text2} to 14
 		set {_scale} to {_scale} * 0.9
 		set {_scale} to 1 if {_scale} < 1
 		set {_scale2toDelete} to {_scale2toDelete} * 0.7
@@ -96,15 +76,21 @@ function exact(entity: entity, time: number):
 		set display scale of {_text} to vector({_scale},{_scale},{_scale})
 		set display scale of {_text2} to vector({_scale4},{_scale4},{_scale4})
 		set display translation of {_text} to vector({_scale}*-0.015,{_scale}*-0.15,0)
-		set display translation of {_text2} to vector({_scale4}*-0.015,{_scale4}*-0.15,0)
+		set display translation of {_text2} to vector({_scale4}*-0.015,{_scale4}*-0.15+0.1,0)
 		wait 1 tick
-	loop all text displays:
-		if loop-entity is {_text}:
-			delete loop-entity
-		else if loop-entity is {_text2}:
-			delete loop-entity
+	kill {_text}
+	kill {_text2}
 
-function great(entity: entity, el: text, time: number):
+function great(index: text, el: text, time: number):
+	set {_face} to {-onstage::%{_index}%::face}
+	set {_type} to {-onstage::%{_index}%::type}
+	set {_x} to {-onstage::%{_index}%::x}
+	set {_y} to {-onstage::%{_index}%::y}
+	set {_loc} to location({_x}+0.5, {_y}+0.55, 5, world "world", 180, 0) if {_face} is "w"
+	set {_loc} to location(5, {_y}+0.55, -1*{_x}+0.5, world "world", 90, 0) if {_face} is "a"
+	set {_loc} to location(-1*{_x}+0.55, {_y}+0.5, -4, world "world", 0, 0) if {_face} is "s"
+	set {_loc} to location(-4, {_y}+0.55, {_x}+0.5, world "world", -90, 0) if {_face} is "d"
+
 	play sound "entity.player.hurt" with pitch 2 to all players if {hitSound::%uuid of {actor}%} is "&a开"
 	add 1 to {combo}
 	add 0.7 to {hitNotes}
@@ -115,63 +101,39 @@ function great(entity: entity, el: text, time: number):
 		send action bar "&bEarly" to all players
 	if {_el} is "late":
 		send action bar "&6Late" to all players
-	set {_face} to metadata value "face" of {_entity}
-	set {_loc} to location of {_entity}
-	set {_z} to z location of {_loc}
-	set {_x} to x location of {_loc}
-	set yaw of {_loc} to 180 if {_face} is "w"
-	set yaw of {_loc} to 90 if {_face} is "a"
-	set yaw of {_loc} to 0 if {_face} is "s"
-	set yaw of {_loc} to -90 if {_face} is "d"
-	{_loc}.add(0, 0, {_z}*-1+5) if {_face} is "w"
-	{_loc}.add({_x}*-1+5, 0, 0) if {_face} is "a"
-	{_loc}.add(0, 0, {_z}*-1-4) if {_face} is "s"
-	{_loc}.add({_x}*-1-4, 0, 0) if {_face} is "d"
-	{_loc}.add(0, 1, 0)
-	if metadata value "notetype" of {_entity} is "drag" or "hold" or "flick":
-		if {autoPlay::%uuid of {actor}%} is not "&a开":
-			{_loc}.add(0, -20, 0)
-		else if metadata value "notetype" of {_entity} is "drag":
-			{_loc}.add(0, 0, 0)
-		else if metadata value "notetype" of {_entity} is "hold":
-			{_loc}.add(0, -20, 0)
-		else:
-			{_loc}.add(0, -20.5, 0)
-	else:
-		{_loc}.add(0, 0, 0)
 	summon text display at {_loc}:
 		set {_alpha} to 255
-		set display text of the entity to "&eJust" if {showOffset::%uuid of {actor}%} is not "&a开"
+		set text of the entity to "&eJust" if {showOffset::%uuid of {actor}%} is not "&a开"
 		if {showOffset::%uuid of {actor}%} is "&a开":
-			set display text of the entity to "&e+%round({_time})%" if {_time} > 0
-			set display text of the entity to "&e%round({_time})%" if {_time} < 0
-			set display text of the entity to "&b" if {_time} = 0
-		set display text background color of the entity to bukkitColor(0,0,0,0)
+			set text of the entity to "&e+%round({_time})%" if {_time} > 0
+			set text of the entity to "&e%round({_time})%" if {_time} < 0
+			set text of the entity to "&b" if {_time} = 0
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
 		set {_scale} to 3
 		set display scale of the entity to vector({_scale},{_scale},{_scale})
-		set display translation of the entity to vector({_scale}*-0.015,{_scale}*-0.15,0)
+		set display translation of the entity to vector({_scale}*-0.015,{_scale}*-0.1,0)
 		set metadata value "belongsto" of the entity to uuid of {_ent1}
-		set display shadow strength of the entity to 0
+		set shadow strength of the entity to 0
 		set {_text} to the entity
 	summon text display at {_loc}:
 		set {_alpha} to 255
-		set display text of the entity to "&e█"
-		set display text background color of the entity to bukkitColor(0,0,0,0)
-		set display text opacity of the entity to 14
+		set text of the entity to "&e█"
+		entity.setBackgroundColor(Color.fromARGB(0,0,0,0))
+		set opacity of the entity to 14
 		set {_scale2} to 8
 		set {_scale2toDelete} to 3
 		set display scale of the entity to vector(2,2,2)
-		set display translation of the entity to vector({_scale2}*-0.015,{_scale2}*-0.15,0)
+		set display translation of the entity to vector({_scale2}*-0.015,{_scale2}*-0.15+0.1,0)
 		set metadata value "belongsto" of the entity to uuid of {_ent1}
-		set display shadow strength of the entity to 0
+		set shadow strength of the entity to 0
 		set {_text2} to the entity
 	loop 10 times:
 		remove 24 from {_alpha}
-		set display text opacity of {_text} to {_alpha}
+		set opacity of {_text} to {_alpha}
 		if {_alpha} > 40:
-			set display text opacity of {_text2} to {_alpha} / 4
+			set opacity of {_text2} to {_alpha} / 4
 		else:
-			set display text opacity of {_text2} to 14
+			set opacity of {_text2} to 14
 		set {_scale} to {_scale} * 0.9
 		set {_scale} to 1 if {_scale} < 1
 		set {_scale2toDelete} to {_scale2toDelete} * 0.5
@@ -179,134 +141,93 @@ function great(entity: entity, el: text, time: number):
 		set display scale of {_text} to vector({_scale},{_scale},{_scale})
 		set display scale of {_text2} to vector({_scale4},{_scale4},{_scale4})
 		set display translation of {_text} to vector({_scale}*-0.015,{_scale}*-0.15,0)
-		set display translation of {_text2} to vector({_scale4}*-0.015,{_scale4}*-0.15,0)
+		set display translation of {_text2} to vector({_scale4}*-0.015,{_scale4}*-0.15+0.1,0)
 		wait 1 tick
-	loop all text displays:
-		if loop-entity is {_text}:
-			delete loop-entity
-		else if loop-entity is {_text2}:
-			delete loop-entity
+	kill {_text}
+	kill {_text2}
 
 function miss():
 	set {combo} to 0
 	add 1 to {statistics::miss}
-	send title "" with subtitle "&4Miss" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
 
-function hitNote(entity: entity):
-	set {_loc} to location of {_entity}
-	set {_x} to z location of {_loc} if metadata value "face" of {_entity} is "w" or "s"
-	set {_x} to x location of {_loc} if metadata value "face" of {_entity} is "a" or "d"
-	set {_time} to ({_x} - 4) / {speed::%uuid of {actor}%} * 50 if metadata value "face" of {_entity} is "w" or "a"
-	set {_time} to (-1 * {_x} - 4) / {speed::%uuid of {actor}%} * 50 if metadata value "face" of {_entity} is "s" or "d"
-	#broadcast "%{_time}%ms"
-	if abs({_time}) <= 80:
-		exact({_entity}, {_time})
-		set {_canRemove} to true
-	else if abs({_time}) <= 200:
-		if metadata value "forceexact" of {_entity} is true:
-			exact({_entity}, {_time})
-		else:
-			if {_time} > 0:
-				great({_entity}, "early", {_time})
-			else:
-				great({_entity}, "late", {_time})
-		set {_canRemove} to true
-	{_canRemove} is set
-	if metadata value "notetype" of {_entity} is "double":
-		if metadata value "linknote" of {_entity} is set:
-			loop all interactions:
-				uuid of loop-entity is metadata value "linknote" of {_entity}
-				deleteNote(loop-entity)
-				clear metadata value "linknote" of {_entity}
-				exit this loop
-		else:
-			deleteNote({_entity})
-	else:
-		deleteNote({_entity})
+#hitNote移至input.sk
 
-function deleteNote(entity: entity):
-	set {_uuid} to uuid of {_entity}
-	set {_linkuuid} to metadata value "linkuuid" of {_entity}
-	metadata value "linkuuid" of {_entity} is set
-	loop all block displays:
-		if uuid of loop-entity is {_linkuuid}:
-			delete loop-entity
-		if metadata value "note1" of loop-entity is {_uuid}:
-			delete loop-entity
-		if metadata value "note2" of loop-entity is {_uuid}:
-			delete loop-entity
-	loop all interactions:
-		loop-entity is {_entity}
-		delete loop-entity
-	wait 1 tick
-	loop all text displays:
-		if metadata value "belongsto" of loop-entity is {_uuid}:
-			#broadcast "deleted %loop-entity%"
-			delete loop-entity
-		if metadata value "linkbind" of loop-entity is {_linkuuid}:
-			#broadcast "deleted %loop-entity%"
-			delete loop-entity
+function deleteNote(index: text):
+	if {-onstage::%{_index}%::type} is "tap", "drag" or "hold":
+		kill fake entity {-onstage::%{_index}%::entity}
+		clear {-onstage::%{_index}%::*}
+	else if {-onstage::%{_index}%::type} is "flick":
+		kill fake entity {-onstage::%{_index}%::entity}
+		kill fake entity {-onstage::%{_index}%::textdisplay}
+		clear {-onstage::%{_index}%::*}
+	else if {-onstage::%{_index}%::type} is "double":
+		kill fake entity {-onstage::%{_index}%::entity}
+		kill fake entity {-onstage::%{_index}%::line}
+		clear {-onstage::%{_index}%::*}
 
-function checkIfTurned(entity: entity):
-	exact({_entity}, 0)
-	set {_face} to metadata value "face" of {_entity}
-	set {_turn} to metadata value "turn" of {_entity}
+function checkIfTurned(index: text):
+	set {_face} to {-onstage::%{_index}%::face}
+	set {_turn} to {-onstage::%{_index}%::turn}
+	{actor} is set
 	{autoPlay::%uuid of {actor}%} is not "&a开"
-	wait 0.5 seconds
-	loop all players:
-		{actor} is loop-player
-		set {_yaw} to yaw of loop-player
+	clear {_pass}
+	loop 10 times:
+		set {_yaw} to yaw of {actor}
 		set {_yaw} to {_yaw} - 360 if {_yaw} > 180
 		set {_yaw} to {_yaw} + 360 if {_yaw} < -180
 		if {_face} is "w":
 			if {_turn} is "left":
 				if {_yaw} is between -135 and -45:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
 			else if {_turn} is "right":
 				if {_yaw} is between 45 and 135:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
+
 		else if {_face} is "a":
 			if {_turn} is "left":
 				if {_yaw} is between 135 and 180:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
+					set {_pass} to true
+					exit loop
 				else if {_yaw} is between -180 and -135:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
 			else if {_turn} is "right":
 				if {_yaw} is between -45 and 45:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
+
 		else if {_face} is "s":
 			if {_turn} is "left":
 				if {_yaw} is between 45 and 135:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
 			else if {_turn} is "right":
 				if {_yaw} is between -135 and -45:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
+
 		else if {_face} is "d":
 			if {_turn} is "right":
 				if {_yaw} is between 135 and 180:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
+					set {_pass} to true
+					exit loop
 				else if {_yaw} is between -180 and -135:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
+					set {_pass} to true
+					exit loop
 			else if {_turn} is "left":
 				if {_yaw} is between -45 and 45:
-					send title "" with subtitle "&aPass" to all players for 0.5 seconds with fade in 0.1 second and fade out 0.3 seconds
-				else:
-					miss()
-		exit loop
+					set {_pass} to true
+					exit loop
+		
+		wait 1 tick
+	if {_pass} is true:
+		send title "&a &a" with subtitle "&aPass" to {actor} for 2 ticks with fade in 0 ticks and fade out 8 ticks
+		play sound "entity.wither.shoot" at volume 0.2 at pitch 2 to {actor}
+		play sound "entity.iron_golem.attack" at volume 0.2 at pitch 0.5 to {actor}
+	else:
+		miss()
 
 function deleteEntity(entity: entity):
 	wait 1 tick
