@@ -410,3 +410,10 @@ function getPreviousDiff(i: text) :: text:
 		case "basic" -> "easy"
 		case "easy" -> "inferno"
 		default -> "inferno"
+
+on quit:
+	loop indices of {-soundx::*}:
+		{-soundx::%loop-value%}.stop()
+		{-soundx::%loop-value%}.flush()
+		{-soundx::%loop-value%}.close()
+		clear {-soundx::%loop-value%}

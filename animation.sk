@@ -183,7 +183,7 @@ every ticks:
 				exact({_index}, 0)
 				deleteNote({_index})
 			else:
-				{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime} - 50
 				exact({_index}, 0)
 				deleteNote({_index})
 		else if {-onstage::%{_index}%::type} is "tap" or "double":
@@ -201,7 +201,7 @@ every ticks:
 				deleteNote({_index})
 		else if {-onstage::%{_index}%::type} is "drag":
 			if {-onstage::%{_index}%::hited} is true:
-				{-onstage::%{_index}%::time} <= {_noinputjudgetime}
+				{-onstage::%{_index}%::time} <= {_noinputjudgetime} - 50
 				exact({_index}, 0)
 				deleteNote({_index})
 			else:

@@ -45,6 +45,17 @@ on dismount:
 on resource pack request response:
 	if the resource pack was successfully loaded:
 		wait 1 second
+		set {_loc} to location(0,0,0,world "world",0,0)
+		set {_meta} to block display meta data:
+			display block data: light_blue_concrete
+			display scale: vector(0.1,0.1,0.1)
+		set {_e} to a new fake block display entity:
+			viewers: all players
+			location: {_loc}
+			meta: {_meta}
+		spawn fake entity {_e} at {_loc}
+		delayTranslation({_e}, vector(0,0,100))
+		delayKill({_e}, 20)
 		mainGUI()
 
 on server list ping:
